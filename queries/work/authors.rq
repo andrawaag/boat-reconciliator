@@ -1,0 +1,7 @@
+# Authors, in Crossref order where known, with the sources that list them
+SELECT ?author (SAMPLE(?n) AS ?authorLabel) (MIN(?pos) AS ?position) (GROUP_CONCAT(DISTINCT ?src; separator=" ") AS ?sources) WHERE {
+  GRAPH ?g { <{{iri}}> schema:author ?author }
+  BIND(STRAFTER(STR(?g), "urn:frugalscholia:source:") AS ?src)
+  OPTIONAL { ?author schema:name ?n }
+  OPTIONAL { <{{iri}}> fs:authorship ?as . ?as fs:agent ?author ; fs:position ?pos }
+} GROUP BY ?author ORDER BY ?position ?authorLabel

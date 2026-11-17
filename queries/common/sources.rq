@@ -1,0 +1,5 @@
+# Where the triples in this graph come from
+SELECT ?source (COUNT(*) AS ?triples) WHERE {
+  GRAPH ?g { ?s ?p ?o }
+  BIND(STRAFTER(STR(?g), "urn:frugalscholia:source:") AS ?source)
+} GROUP BY ?source ORDER BY DESC(?triples)

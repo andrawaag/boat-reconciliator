@@ -1,0 +1,5 @@
+# Most common subjects in this venue
+SELECT ?topic (SAMPLE(?n) AS ?topicLabel) (COUNT(DISTINCT ?work) AS ?works) WHERE {
+  ?work schema:isPartOf <{{iri}}> ; schema:about ?topic .
+  OPTIONAL { ?topic schema:name ?n }
+} GROUP BY ?topic ORDER BY DESC(?works) LIMIT 50

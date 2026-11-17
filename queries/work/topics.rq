@@ -1,0 +1,4 @@
+# Main subjects
+SELECT ?topic (SAMPLE(?n) AS ?topicLabel) WHERE {
+  <{{iri}}> schema:about ?topic . OPTIONAL { ?topic schema:name ?n }
+} GROUP BY ?topic

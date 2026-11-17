@@ -1,0 +1,183 @@
+{
+  "entities": {
+    "wikidata:Q18618629": {
+      "name": "Denny Vrandečić",
+      "aspect": "author",
+      "iri": "https://orcid.org/0000-0002-9593-2294",
+      "file": "data/author/wikidata_Q18618629.nq.gz",
+      "quads": 2767,
+      "bytes": 29557,
+      "generated": "2026-11-17T12:47:55.545Z",
+      "endpoint": "https://qlever.dev/api/wikidata",
+      "log": [
+        {
+          "source": "wikidata",
+          "what": "author neighbourhood",
+          "quads": 1369,
+          "ms": 808
+        },
+        {
+          "source": "orcid",
+          "what": "record and works",
+          "quads": 10,
+          "ms": 270
+        },
+        {
+          "source": "datacite",
+          "what": "works with this ORCID",
+          "quads": 0,
+          "ms": 285
+        },
+        {
+          "source": "openalex",
+          "what": "works by this author",
+          "quads": 2257,
+          "ms": 924
+        },
+        {
+          "source": "crossref",
+          "what": "works with this ORCID",
+          "quads": 56,
+          "ms": 4322
+        }
+      ]
+    },
+    "orcid:0000-0001-9488-1870": {
+      "name": "Daniel Mietchen",
+      "aspect": "author",
+      "iri": "https://orcid.org/0000-0001-9488-1870",
+      "file": "data/author/orcid_0000-0001-9488-1870.nq.gz",
+      "quads": 28748,
+      "bytes": 275844,
+      "generated": "2026-11-17T12:48:08.179Z",
+      "endpoint": "https://qlever.dev/api/wikidata",
+      "log": [
+        {
+          "source": "wikidata",
+          "what": "author neighbourhood",
+          "quads": 6826,
+          "ms": 897
+        },
+        {
+          "source": "orcid",
+          "what": "record and works",
+          "quads": 1279,
+          "ms": 629
+        },
+        {
+          "source": "datacite",
+          "what": "works with this ORCID",
+          "quads": 6925,
+          "ms": 1266
+        },
+        {
+          "source": "openalex",
+          "what": "works by this author",
+          "quads": 15113,
+          "ms": 1691
+        },
+        {
+          "source": "crossref",
+          "what": "works with this ORCID",
+          "quads": 5838,
+          "ms": 10654
+        }
+      ]
+    },
+    "doi:10.1145/2629489": {
+      "name": "Wikidata: A Free Collaborative Knowledgebase",
+      "aspect": "work",
+      "iri": "https://doi.org/10.1145/2629489",
+      "file": "data/work/doi_10.1145_2629489.nq.gz",
+      "quads": 6516,
+      "bytes": 102437,
+      "generated": "2026-11-17T12:48:14.023Z",
+      "endpoint": "https://qlever.dev/api/wikidata",
+      "log": [
+        {
+          "source": "wikidata",
+          "what": "work neighbourhood",
+          "quads": 5581,
+          "ms": 663
+        },
+        {
+          "source": "datacite",
+          "what": "work and relations",
+          "quads": 0,
+          "ms": 141
+        },
+        {
+          "source": "openalex",
+          "what": "work, references, citing works",
+          "quads": 906,
+          "ms": 1017
+        },
+        {
+          "source": "crossref",
+          "what": "work and references",
+          "quads": 35,
+          "ms": 5030
+        }
+      ]
+    },
+    "wikidata:Q2013": {
+      "name": "Wikidata",
+      "aspect": "topic",
+      "iri": "http://www.wikidata.org/entity/Q2013",
+      "file": "data/topic/wikidata_Q2013.nq.gz",
+      "quads": 15735,
+      "bytes": 214279,
+      "generated": "2026-11-17T12:48:15.474Z",
+      "endpoint": "https://qlever.dev/api/wikidata",
+      "log": [
+        {
+          "source": "wikidata",
+          "what": "topic neighbourhood",
+          "quads": 20770,
+          "ms": 1281
+        }
+      ]
+    },
+    "issn:2052-4463": {
+      "name": "Scientific Data",
+      "aspect": "venue",
+      "iri": "http://www.wikidata.org/entity/Q27725928",
+      "file": "data/venue/issn_2052-4463.nq.gz",
+      "quads": 124104,
+      "bytes": 1282454,
+      "generated": "2026-11-17T12:48:52.016Z",
+      "endpoint": "https://qlever.dev/api/wikidata",
+      "log": [
+        {
+          "source": "wikidata",
+          "what": "venue neighbourhood",
+          "quads": 67766,
+          "ms": 3083
+        },
+        {
+          "source": "openalex",
+          "what": "source and recent works",
+          "quads": 43785,
+          "ms": 4258
+        },
+        {
+          "source": "crossref",
+          "what": "journal and recent works",
+          "quads": 29869,
+          "ms": 32793
+        }
+      ]
+    }
+  },
+  "aliases": {
+    "orcid:0000-0002-9593-2294": "wikidata:Q18618629",
+    "wikidata:Q20895785": "orcid:0000-0001-9488-1870",
+    "wikidata:Q18507561": "doi:10.1145/2629489",
+    "wikidata:Q27725928": "issn:2052-4463",
+    "openalex:A5018023802": "wikidata:Q18618629",
+    "openalex:A5050528093": "orcid:0000-0001-9488-1870",
+    "openalex:W2080133951": "doi:10.1145/2629489",
+    "openalex:S2607323502": "issn:2052-4463"
+  },
+  "generated": "2026-11-17T12:48:52.868Z"
+}

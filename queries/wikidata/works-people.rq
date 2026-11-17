@@ -1,0 +1,6 @@
+CONSTRUCT { ?work wdt:P50 ?a . ?a rdfs:label ?l ; wdt:P496 ?orcid . }
+WHERE {
+  ?work wdt:{{link}} wd:{{q}} ; wdt:P50 ?a .
+  OPTIONAL { ?a rdfs:label ?l FILTER(LANG(?l) = "en") }
+  OPTIONAL { ?a wdt:P496 ?orcid }
+}

@@ -1,0 +1,5 @@
+# Works per publication year
+SELECT ?year (COUNT(DISTINCT ?work) AS ?count) WHERE {
+  ?work schema:author <{{iri}}> ; schema:datePublished ?d .
+  BIND(SUBSTR(STR(?d), 1, 4) AS ?year)
+} GROUP BY ?year ORDER BY ?year

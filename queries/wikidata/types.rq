@@ -1,0 +1,1 @@
+SELECT ?type WHERE { wd:{{q}} wdt:P31 ?type }

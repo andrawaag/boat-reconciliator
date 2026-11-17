@@ -1,0 +1,6 @@
+# Bibliographic details
+SELECT (MIN(STR(?d)) AS ?date) (SAMPLE(?v) AS ?venue) (SAMPLE(?vn) AS ?venueLabel) (MAX(?c) AS ?citedByCount) WHERE {
+  OPTIONAL { <{{iri}}> schema:datePublished ?d }
+  OPTIONAL { <{{iri}}> schema:isPartOf ?v OPTIONAL { ?v schema:name ?vn } }
+  OPTIONAL { <{{iri}}> fs:citedByCount ?c }
+}

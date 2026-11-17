@@ -1,0 +1,4 @@
+SELECT (SAMPLE(?n) AS ?name) (SAMPLE(?d) AS ?description) WHERE {
+  OPTIONAL { <{{iri}}> schema:name ?n }
+  OPTIONAL { <{{iri}}> schema:description ?d }
+}

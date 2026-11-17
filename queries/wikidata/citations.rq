@@ -1,0 +1,5 @@
+CONSTRUCT { wd:{{q}} wdt:P2860 ?cited . ?cited rdfs:label ?l ; wdt:P577 ?d ; wdt:P356 ?doi . ?citing wdt:P2860 wd:{{q}} ; rdfs:label ?cl ; wdt:P577 ?cd ; wdt:P356 ?cdoi . }
+WHERE {
+  { wd:{{q}} wdt:P2860 ?cited OPTIONAL { ?cited rdfs:label ?l FILTER(LANG(?l) = "en") } OPTIONAL { ?cited wdt:P577 ?d } OPTIONAL { ?cited wdt:P356 ?doi } }
+  UNION { ?citing wdt:P2860 wd:{{q}} OPTIONAL { ?citing rdfs:label ?cl FILTER(LANG(?cl) = "en") } OPTIONAL { ?citing wdt:P577 ?cd } OPTIONAL { ?citing wdt:P356 ?cdoi } }
+}

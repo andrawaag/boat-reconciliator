@@ -1,0 +1,3 @@
+PREFIX schema: <http://schema.org/>
+PREFIX fs: <urn:frugalscholia:vocab:>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>

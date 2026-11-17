@@ -1,0 +1,7 @@
+# Several items can share an external id (duplicates, editions); prefer the labelled, best-linked one.
+PREFIX wikibase: <http://wikiba.se/ontology#>
+SELECT ?item WHERE {
+  ?item wdt:{{prop}} "{{value}}" .
+  OPTIONAL { ?item rdfs:label ?l FILTER(LANG(?l) = "en") }
+  OPTIONAL { ?item wikibase:sitelinks ?links }
+} ORDER BY DESC(BOUND(?l)) DESC(?links) LIMIT 1

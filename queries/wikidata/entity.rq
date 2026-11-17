@@ -1,0 +1,6 @@
+CONSTRUCT { wd:{{q}} rdfs:label ?l ; schema:description ?d ; wdt:P31 ?t ; wdt:P496 ?orcid ; wdt:P356 ?doi ; wdt:P236 ?issn ; wdt:P856 ?web ; wdt:P10283 ?openalex ; wdt:P577 ?date ; wdt:P1476 ?title . }
+WHERE {
+  { wd:{{q}} rdfs:label ?l FILTER(LANG(?l) = "en") } UNION { wd:{{q}} schema:description ?d FILTER(LANG(?d) = "en") }
+  UNION { wd:{{q}} wdt:P31 ?t } UNION { wd:{{q}} wdt:P496 ?orcid } UNION { wd:{{q}} wdt:P356 ?doi }
+  UNION { wd:{{q}} wdt:P236 ?issn } UNION { wd:{{q}} wdt:P856 ?web } UNION { wd:{{q}} wdt:P10283 ?openalex } UNION { wd:{{q}} wdt:P577 ?date } UNION { wd:{{q}} wdt:P1476 ?title }
+}

@@ -1,0 +1,5 @@
+# Most prolific authors in this venue
+SELECT ?author (SAMPLE(?n) AS ?authorLabel) (COUNT(DISTINCT ?work) AS ?works) WHERE {
+  ?work schema:isPartOf <{{iri}}> ; schema:author ?author .
+  OPTIONAL { ?author schema:name ?n }
+} GROUP BY ?author ORDER BY DESC(?works) LIMIT 50

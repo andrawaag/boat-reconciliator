@@ -1,0 +1,6 @@
+CONSTRUCT { ?x rdfs:label ?l ; wdt:P236 ?issn . }
+WHERE {
+  { SELECT DISTINCT ?x WHERE { ?work wdt:{{link}} wd:{{q}} ; wdt:P1433|wdt:P921 ?x } }
+  OPTIONAL { ?x rdfs:label ?l FILTER(LANG(?l) = "en") }
+  OPTIONAL { ?x wdt:P236 ?issn }
+}

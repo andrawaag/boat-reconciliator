@@ -1,0 +1,8 @@
+# Example custom panel: which sources know about this author's works, per publication year.
+# Variables become Vega-Lite fields (see the "spec" for this panel in site.config.json).
+SELECT ?year ?source (COUNT(DISTINCT ?work) AS ?works) WHERE {
+  GRAPH ?g { ?work schema:author <{{iri}}> }
+  ?work schema:datePublished ?d .
+  BIND(SUBSTR(STR(?d), 1, 4) AS ?year)
+  BIND(STRAFTER(STR(?g), "urn:frugalscholia:source:") AS ?source)
+} GROUP BY ?year ?source ORDER BY ?year

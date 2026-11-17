@@ -1,0 +1,5 @@
+# Where this author publishes
+SELECT ?venue (SAMPLE(?n) AS ?venueLabel) (COUNT(DISTINCT ?work) AS ?works) WHERE {
+  ?work schema:author <{{iri}}> ; schema:isPartOf ?venue .
+  OPTIONAL { ?venue schema:name ?n }
+} GROUP BY ?venue ORDER BY DESC(?works) LIMIT 50

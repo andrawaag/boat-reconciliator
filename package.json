@@ -1,0 +1,25 @@
+{
+  "name": "frugalscholia",
+  "version": "0.2.0",
+  "description": "Scholia-style scholarly profiles from Wikidata, as a static site powered by Comunica",
+  "scripts": {
+    "build": "esbuild src/comunica-entry.js --bundle --format=esm --platform=browser --minify --define:global=globalThis --outfile=vendor/comunica.js",
+    "snapshot": "node scripts/snapshot.mjs",
+    "serve": "http-server -c-1 -p 8799 .",
+    "check": "node scripts/check.mjs"
+  },
+  "license": "MIT",
+  "type": "module",
+  "dependencies": {
+    "@comunica/query-sparql": "^5.4.1",
+    "n3": "^2.13.12"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2",
+    "http-server": "^14.1.1"
+  },
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -1,0 +1,2 @@
+# Identifiers this entity is known under, across sources
+SELECT DISTINCT ?id WHERE { { BIND(<{{iri}}> AS ?id) } UNION { <{{iri}}> schema:sameAs ?id } }

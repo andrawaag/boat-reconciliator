@@ -1,0 +1,5 @@
+# Example custom panel using a built-in renderer ("bars": first column = label, second = value).
+SELECT ?year (COUNT(DISTINCT ?citing) AS ?citations) WHERE {
+  ?citing schema:citation <{{iri}}> ; schema:datePublished ?d .
+  BIND(SUBSTR(STR(?d), 1, 4) AS ?year)
+} GROUP BY ?year ORDER BY ?year

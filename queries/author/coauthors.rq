@@ -1,0 +1,6 @@
+# Most frequent co-authors
+SELECT ?coauthor (SAMPLE(?n) AS ?coauthorLabel) (COUNT(DISTINCT ?work) AS ?works) WHERE {
+  ?work schema:author <{{iri}}>, ?coauthor .
+  FILTER(?coauthor != <{{iri}}>)
+  OPTIONAL { ?coauthor schema:name ?n }
+} GROUP BY ?coauthor ORDER BY DESC(?works) LIMIT 50
