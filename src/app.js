@@ -1,9 +1,10 @@
-// koetai-bibliography web app: routing, loading a graph (snapshot or live harvest), and rendering panels.
+// koetai-reconciliator web app: routing, loading a graph (snapshot or live harvest), and rendering panels.
 import { QueryEngine, Store, Parser, Writer, DataFactory } from "../vendor/comunica.js";
 import { ASPECTS, ENDPOINTS, fillPanel } from "./aspects.js";
 import { normalizeConfig, panelsFor } from "./config.js";
 import { parseKey, keyString, iriToKey } from "./model.js";
 import { harvest } from "./harvest.js";
+import { gatherCandidate, findExisting, searchByName, buildCommands, quickStatementsUrl, propertyLabel, propertyUrl } from "./wikidata-create.js";
 
 const engine = new QueryEngine();
 const $ = (sel, el = document) => el.querySelector(sel);
@@ -16,8 +17,8 @@ document.documentElement.style.setProperty("--accent-config", config.accent);
 
 // ---------- settings ----------
 const store = {
-  get: (k, d) => { try { return localStorage.getItem(`kb.${k}`) ?? d; } catch { return d; } },
-  set: (k, v) => { try { localStorage.setItem(`kb.${k}`, v); } catch {} },
+  get: (k, d) => { try { return localStorage.getItem(`kr.${k}`) ?? d; } catch { return d; } },
+  set: (k, v) => { try { localStorage.setItem(`kr.${k}`, v); } catch {} },
 };
 const endpoints = { site: { label: `Site default (${new URL(config.wikidataEndpoint).host})`, url: config.wikidataEndpoint }, ...ENDPOINTS };
 const settings = { mode: config.liveHarvest ? store.get("mode", "auto") : "snapshot", endpoint: store.get("endpoint", "site") };
@@ -242,6 +243,59 @@ function downloadGraph(graph) {
   });
 }
 
+// ---------- Add to Wikidata (authors without a Wikidata item) ----------
+async function wikidataPanel(graph) {
+  const run = async (file) => (await engine.queryBindings(fillPanel(await loadText("queries/prefixes.rq"), await loadText(file), graph.iri), { sources: [graph.store], unionDefaultGraph: true })).toArray();
+  const cand = await gatherCandidate(run, graph.iri);
+  if (cand.wikidata.length || graph.iri.startsWith("http://www.wikidata.org/") || !cand.ids.length) return null;
+
+  const status = h("span", { class: "timing" }, "Checking Wikidata…");
+  const box = h("div", { class: "panel-body" });
+  const el = h("section", { class: "panel wide wd-create", id: "panel-add-to-wikidata" }, h("header", {}, h("h2", {}, "Not on Wikidata yet"), status), box);
+
+  const [existing, byName] = await Promise.all([
+    findExisting(engine, endpoints[settings.endpoint].url, cand.ids).catch(() => []),
+    searchByName(cand.label).catch(() => []),
+  ]);
+  status.textContent = existing.length ? "Identifier already on Wikidata" : `${cand.ids.length} identifiers found`;
+
+  let target = existing[0]?.qid ?? null;
+  const textarea = h("textarea", { class: "qs", rows: 10, spellcheck: "false", "aria-label": "QuickStatements commands" });
+  const regenerate = () => {
+    const have = new Set(existing.filter((e) => e.qid === target).map((e) => `${e.property}|${e.value}`));
+    const ids = target ? cand.ids.filter((x) => !have.has(`${x.property}|${x.value}`)) : cand.ids;
+    textarea.value = buildCommands({ ...cand, ids }, { target });
+    modeLine.replaceChildren(target
+      ? h("span", {}, "Adds the missing identifiers to ", h("a", { href: `https://www.wikidata.org/wiki/${target}`, target: "_blank", rel: "noopener" }, target), ". ", h("button", { type: "button", class: "linkish", onclick: () => { target = null; regenerate(); } }, "Create a new item instead"))
+      : h("span", {}, "Creates a new item for a human researcher with these names and identifiers."));
+  };
+  const modeLine = h("p", { class: "mode-line" });
+  const useItem = (qid) => h("button", { type: "button", class: "linkish", onclick: () => { target = qid; regenerate(); textarea.scrollIntoView({ block: "nearest" }); } }, "add identifiers to this item");
+
+  box.replaceChildren(...h("div", {},
+    h("p", {}, "No Wikidata item carries this person's ORCID or OpenAlex ID. You can add them to Wikidata with ",
+      h("a", { href: "https://www.wikidata.org/wiki/Help:QuickStatements", target: "_blank", rel: "noopener" }, "QuickStatements"),
+      ", which runs the edits under your own Wikimedia account. Check the possible matches first so you don't create a duplicate."),
+    existing.length > 0 && h("div", { class: "warn" }, h("b", {}, "Already on Wikidata: "), existing.map((e, i) => [i ? "; " : "",
+      h("a", { href: `https://www.wikidata.org/wiki/${e.qid}`, target: "_blank", rel: "noopener" }, e.label ? `${e.label} (${e.qid})` : e.qid), ` has ${propertyLabel(e.property)} ${e.value}`])),
+    h("h3", {}, "Identifiers"),
+    h("ul", { class: "ids" }, cand.ids.map((x) => h("li", {}, h("span", { class: "scheme" }, propertyLabel(x.property)), " ",
+      h("a", { href: propertyUrl(x.property, x.value), target: "_blank", rel: "noopener" }, x.value), " ",
+      h("span", { class: "badges" }, [...x.sources].map((s) => h("span", { class: `badge src-${s}` }, s)))))),
+    byName.length ? [h("h3", {}, `Possible matches for “${cand.label}”`), h("ul", { class: "matches" }, byName.map((m) => h("li", {},
+      h("a", { href: `https://www.wikidata.org/wiki/${m.qid}`, target: "_blank", rel: "noopener" }, `${m.label ?? m.qid} (${m.qid})`),
+      m.description ? ` · ${m.description} · ` : " · ", useItem(m.qid))))] : h("p", { class: "muted" }, `No Wikidata items match the name “${cand.label}”.`),
+    h("h3", {}, "QuickStatements"),
+    modeLine,
+    textarea,
+    h("div", { class: "actions" },
+      h("button", { type: "button", class: "primary", onclick: () => window.open(quickStatementsUrl(textarea.value), "_blank", "noopener") }, "Open in QuickStatements"),
+      h("button", { type: "button", onclick: async (e) => { try { await navigator.clipboard.writeText(textarea.value); e.target.textContent = "Copied"; } catch { textarea.select(); } } }, "Copy commands")),
+    h("p", { class: "muted small" }, "Review and edit the commands above before running them. In QuickStatements, log in, press Run, and check the new item. Then use “Fetch live instead” on this page to see it linked.")).childNodes);
+  regenerate();
+  return el;
+}
+
 // ---------- pages ----------
 let routeId = 0;
 async function entityPage(aspectHint, rawKey) {
@@ -296,6 +350,8 @@ async function entityPage(aspectHint, rawKey) {
     grid.append(el);
     runPanel(graph, p, el);
   }
+  if (aspect === "author" && config.wikidataCreate && config.sources.includes("wikidata"))
+    wikidataPanel(graph).then((el) => { if (el && myRoute === routeId) grid.prepend(el); }).catch((err) => console.warn("Add-to-Wikidata panel:", err));
 }
 
 async function home() {

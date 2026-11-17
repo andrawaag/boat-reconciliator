@@ -1,4 +1,4 @@
-// Gathers everything koetai-bibliography knows about one entity from all sources and returns one merged RDF graph.
+// Gathers everything koetai-reconciliator knows about one entity from all sources and returns one merged RDF graph.
 // Runs unchanged in the browser (live mode) and in Node (the snapshot GitHub Action).
 // ctx = { engine (Comunica), DF (RDF/JS DataFactory), fetch, loadText(path), endpoint, headers,
 //         sources? (names to use; default all), openalexKey? (Node only) }
@@ -37,7 +37,7 @@ export async function harvest(ctx, key, aspectHint, onProgress = () => {}) {
   // 1. Cross-identifiers. OpenAlex ids are resolved via OpenAlex; everything else is looked up on Wikidata.
   if (key.scheme === "openalex" && on("openalex")) fill(await resolveOpenalex(ctx, key.value).catch(() => null));
   if (!ids.wikidata && on("wikidata")) {
-    for (const scheme of ["orcid", "doi", "issn"]) {
+    for (const scheme of ["orcid", "doi", "issn", "openalex"]) {
       if (!ids[scheme]) continue;
       ids.wikidata = await lookupQid(ctx, scheme, ids[scheme]).catch(() => null);
       if (ids.wikidata) break;

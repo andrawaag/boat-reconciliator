@@ -2,9 +2,9 @@
 // Brings disambiguated author ids, venue ids, OpenAlex topics, and a real "cited by" list.
 // Anonymous use is metered (about 1,000 requests a day per IP). Node runs may set OPENALEX_API_KEY;
 // the browser never sees a key.
-import { NS, iri, quadSink, dateLiteral } from "../model.js";
+import { NS, iri, quadSink, dateLiteral, addIdentifier } from "../model.js";
 import { politeJson } from "../http.js";
-const S = NS.schema, FS = NS.kb;
+const S = NS.schema, FS = NS.kr;
 const API = "https://api.openalex.org";
 const WORK_FIELDS = "id,doi,display_name,publication_date,publication_year,type,primary_location,authorships,topics,cited_by_count";
 const MAX_PAGES = 5; // 5 x 200 works
@@ -55,7 +55,7 @@ function mapWork(DF, out, w, { references = false } = {}) {
     out.add(person, NS.rdf + "type", S + "Person");
     out.lit(person, S + "name", a.author.display_name);
     out.add(node, S + "author", person);
-    const as = `urn:koetai-bibliography:authorship:openalex:${short(w.id)}:${i + 1}`;
+    const as = `urn:koetai-reconciliator:authorship:openalex:${short(w.id)}:${i + 1}`;
     out.add(node, FS + "authorship", as);
     out.add(as, FS + "agent", person);
     out.add(as, FS + "position", DF.literal(String(i + 1), DF.namedNode(NS.xsd + "integer")));
@@ -99,8 +99,17 @@ export async function harvestOpenalex(ctx, aspect, ids) {
   if (aspect === "author") {
     const filter = ids.orcid ? `author.orcid:${ids.orcid}` : ids.openalex ? `author.id:${ids.openalex}` : null;
     if (!filter) return [];
-    const author = ids.openalex?.startsWith("A") ? await get(ctx, `/authors/${ids.openalex}`, { select: "id,display_name,orcid" }) : null;
-    if (author) { out.lit(ids.orcid ? iri.orcid(ids.orcid) : author.id, S + "name", author.display_name); if (ids.orcid) out.add(iri.orcid(ids.orcid), S + "sameAs", author.id); }
+    // The author record gives the OpenAlex id even when Wikidata doesn't know it, plus Scopus ids.
+    const ref = ids.openalex?.startsWith("A") ? ids.openalex : `orcid:${ids.orcid}`;
+    const author = await get(ctx, `/authors/${ref}`, { select: "id,display_name,orcid,ids" }).catch(notFound);
+    if (author) {
+      const me = ids.orcid ? iri.orcid(ids.orcid) : author.id;
+      out.lit(me, S + "name", author.display_name);
+      if (me !== author.id) out.add(me, S + "sameAs", author.id);
+      const scopus = author.ids?.scopus?.match(/authorId=(\d+)/)?.[1];
+      if (scopus) addIdentifier(out, me, "P1153", scopus);
+      addIdentifier(out, me, "P10283", author.id.replace("https://openalex.org/", ""));
+    }
     await listWorks(ctx, out, filter);
   } else if (aspect === "work") {
     const ref = ids.doi ? `doi:${ids.doi}` : ids.openalex;

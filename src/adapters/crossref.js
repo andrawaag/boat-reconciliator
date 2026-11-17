@@ -2,7 +2,7 @@
 // Authors with an ORCID become https://orcid.org/… nodes (and merge with ORCID/Wikidata); others get per-work URNs.
 import { NS, iri, quadSink, dateLiteral } from "../model.js";
 import { politeJson } from "../http.js";
-const S = NS.schema, FS = NS.kb;
+const S = NS.schema, FS = NS.kr;
 const API = "https://api.crossref.org";
 const FIELDS = "DOI,title,author,issued,container-title,ISSN,type,is-referenced-by-count";
 
@@ -27,11 +27,11 @@ function mapWork(DF, out, item) {
     out.add(w, FS + "citedByCount", DF.literal(String(item["is-referenced-by-count"]), DF.namedNode(NS.xsd + "integer")));
   (item.author ?? []).forEach((a, i) => {
     const orcid = a.ORCID?.match(/\d{4}-\d{4}-\d{4}-\d{3}[\dX]/i)?.[0];
-    const person = orcid ? iri.orcid(orcid) : `urn:koetai-bibliography:crossref-author:${encodeURIComponent(doi)}:${i + 1}`;
+    const person = orcid ? iri.orcid(orcid) : `urn:koetai-reconciliator:crossref-author:${encodeURIComponent(doi)}:${i + 1}`;
     out.add(person, NS.rdf + "type", S + "Person");
     out.lit(person, S + "name", a.name || [a.given, a.family].filter(Boolean).join(" "));
     out.add(w, S + "author", person);
-    const as = `urn:koetai-bibliography:authorship:${encodeURIComponent(doi)}:${i + 1}`;
+    const as = `urn:koetai-reconciliator:authorship:${encodeURIComponent(doi)}:${i + 1}`;
     out.add(w, FS + "authorship", as);
     out.add(as, FS + "agent", person);
     out.add(as, FS + "position", DF.literal(String(i + 1), DF.namedNode(NS.xsd + "integer")));

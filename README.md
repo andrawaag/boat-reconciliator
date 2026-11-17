@@ -1,10 +1,10 @@
-# koetai-bibliography
+# koetai-reconciliator
 
-A GitHub template for running your own Scholia-style scholarly profile site, with no server.
+**koetai reconciliator** reconciles entities across linked-data sources into one RDF graph per entity, and publishes the result as a static site with no server. It's a GitHub template, so anyone can run their own instance.
 
-Each page (a researcher, a work, a topic or a venue) is one RDF graph, merged in your visitors' browsers from **Wikidata, ORCID, Crossref, DataCite and OpenAlex** and queried with [Comunica](https://comunica.dev). GitHub Pages hosts the site, and a GitHub Action keeps pre-built snapshots of the pages you feature. You add your own visualizations as a SPARQL query plus a few lines of config.
+It starts with scholarly entities. Each page (a researcher, a work, a topic or a venue) is one RDF graph, merged in your visitors' browsers from **Wikidata, ORCID, Crossref, DataCite and OpenAlex** and queried with [Comunica](https://comunica.dev). GitHub Pages hosts the site, and a GitHub Action keeps pre-built snapshots of the pages you feature. You add your own visualizations as a SPARQL query plus a few lines of config.
 
-Inspired by [Scholia](https://github.com/WDscholia/scholia). The aim is to go native on RDF and go beyond Wikidata. (Developed under the working name frugalScholia.)
+Inspired by [Scholia](https://github.com/WDscholia/scholia). The aim is to go native on RDF and go beyond Wikidata: the same adapter → reconcile → query pipeline is meant to extend to other domains and terminologies, such as SNOMED CT, OBO Foundry ontologies and ICD, which are not connected yet. (Developed under the working names frugalScholia and koetai-bibliography.)
 
 ---
 
@@ -27,6 +27,7 @@ Snapshots refresh every Monday. Run the workflow by hand (**Actions → site →
 | `sources` | Which of `wikidata`, `orcid`, `crossref`, `datacite`, `openalex` to use |
 | `wikidataEndpoint` | Wikidata SPARQL endpoint (default QLever, which holds the full graph) |
 | `liveHarvest` | `false` limits the site to its snapshots: no live API calls from visitors' browsers |
+| `wikidataCreate` | `false` hides the "Not on Wikidata yet" panel on author pages (default `true`) |
 | `seeds` | Entities to pre-build and feature on the home page: `orcid:…`, `doi:…`, `issn:…`, `wikidata:Q…`, `openalex:A…/W…/S…/T…`. An object `{ "key": "…", "aspect": "author" }` forces the page type |
 | `panels` | Per page type (`author`, `work`, `topic`, `venue`, `common`): `hide` built-in panels by id, `add` your own |
 
@@ -77,6 +78,17 @@ Every panel has a **SPARQL** toggle that shows the exact query that ran, and eac
 
 Two examples ship with the template: `queries/custom/author/sources-per-year.rq` (Vega-Lite) and `queries/custom/work/citations-per-year.rq` (bars).
 
+## Add a missing author to Wikidata
+
+When an author page's graph has no Wikidata item for the person, the page shows a **Not on Wikidata yet** panel. The panel:
+
+- lists the identifiers that ORCID and OpenAlex state for this person: ORCID iD (P496), OpenAlex ID (P10283), Scopus author ID (P1153), ResearcherID (P1053), Loop ID (P2798), ISNI (P213) and GitHub username (P2037). Identifiers or names that were only joined through name matching are left out;
+- checks the Wikidata endpoint for an item that already carries any of these identifiers. If one does, the commands add only the missing identifiers to that item;
+- lists Wikidata items with the same name, each with an **add identifiers to this item** button, so you can avoid creating a duplicate;
+- generates [QuickStatements](https://www.wikidata.org/wiki/Help:QuickStatements) V1 commands in an editable box. A new item gets an English label, the description "researcher", aliases from ORCID's other names, P31 human (Q5), P106 researcher (Q1650915) and the identifiers. Each statement has a reference: stated in (S248) ORCID (Q51044) or OpenAlex (Q107507571), reference URL (S854) and retrieved (S813).
+
+**Open in QuickStatements** opens the commands there, and you run them under your own Wikimedia account; the site never writes to Wikidata itself. Review the commands before you run them.
+
 ## How it works
 
 ```
@@ -98,7 +110,7 @@ The same harvesting code (`src/harvest.js`) runs in Node for snapshots and in th
 
 ### Data model
 
-Everything is mapped to [schema.org](https://schema.org). Each source writes to its own named graph `urn:koetai-bibliography:source:<name>`, so panels can query provenance with `GRAPH ?g { … }`. Panels query the union of all graphs.
+Everything is mapped to [schema.org](https://schema.org). Each source writes to its own named graph `urn:koetai-reconciliator:source:<name>`, so panels can query provenance with `GRAPH ?g { … }`. Panels query the union of all graphs.
 
 | Concept | Terms |
 |---|---|
@@ -107,7 +119,7 @@ Everything is mapped to [schema.org](https://schema.org). Each source writes to 
 | Venue | `schema:Periodical`, `schema:name`, `schema:issn` |
 | Topic | Wikidata items and OpenAlex topics (`schema:DefinedTerm`), `schema:name` |
 | Identity | `schema:sameAs` to `https://orcid.org/…`, `https://doi.org/…`, `http://www.wikidata.org/entity/Q…`, `urn:issn:…`, `https://openalex.org/…` |
-| Extras | `kb:citedByCount`, `kb:authorship` → `kb:agent` + `kb:position` (author order), where `kb:` = `urn:koetai-bibliography:vocab:` |
+| Extras | `kr:citedByCount`, `kr:authorship` → `kr:agent` + `kr:position` (author order), where `kr:` = `urn:koetai-reconciliator:vocab:` |
 
 **Reconciliation.** Nodes linked by `schema:sameAs` are merged under one canonical IRI: ORCID > DOI > Wikidata > ISSN > OpenAlex. Within a single work, authors from different sources are also joined by name: an exact full-name match between identified authors, or a family name plus first initial for authors who only have a per-work ID. Matching never crosses works, so namesakes on different papers stay separate.
 
@@ -130,7 +142,7 @@ Environment variables: `WIKIDATA_ENDPOINT`, `OPENALEX_API_KEY`, `MAX_QUADS` (sna
 
 ## Adding a source
 
-Write `src/adapters/<name>.js` returning quads in graph `urn:koetai-bibliography:source:<name>`, and use the IRI helpers in `src/model.js` so identities line up. Call it from `src/harvest.js`, add the name to `SOURCES` in `src/model.js`, and give it a badge colour in `src/style.css`. A source with a SPARQL endpoint can be queried through Comunica, as the Wikidata adapter does.
+Write `src/adapters/<name>.js` returning quads in graph `urn:koetai-reconciliator:source:<name>`, and use the IRI helpers in `src/model.js` so identities line up. Call it from `src/harvest.js`, add the name to `SOURCES` in `src/model.js`, and give it a badge colour in `src/style.css`. A source with a SPARQL endpoint can be queried through Comunica, as the Wikidata adapter does.
 
 ## Known limits
 

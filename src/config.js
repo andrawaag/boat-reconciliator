@@ -4,13 +4,14 @@ import { ASPECTS, COMMON_PANELS, ENDPOINTS } from "./aspects.js";
 import { SOURCES } from "./model.js";
 
 export const DEFAULT_CONFIG = {
-  title: "koetai-bibliography",
+  title: "koetai-reconciliator",
   tagline: "Scholarly profiles without a server",
   intro: "",
   accent: "#2f6f5e",
   sources: SOURCES,
   wikidataEndpoint: ENDPOINTS.qlever.url,
   liveHarvest: true,
+  wikidataCreate: true,
   seeds: [],
   panels: {},
 };

@@ -39,7 +39,7 @@ export function reconcile(DF, quads) {
   // Make every member of a cluster discoverable from the canonical node.
   for (const member of parent.keys()) {
     const c = canonical(member);
-    if (member !== c && !sameAsPairs.has(`${c} ${member}`)) { sameAsPairs.add(`${c} ${member}`); out.push(DF.quad(DF.namedNode(c), DF.namedNode(SAME_AS), DF.namedNode(member), DF.namedNode("urn:koetai-bibliography:source:reconcile"))); }
+    if (member !== c && !sameAsPairs.has(`${c} ${member}`)) { sameAsPairs.add(`${c} ${member}`); out.push(DF.quad(DF.namedNode(c), DF.namedNode(SAME_AS), DF.namedNode(member), DF.namedNode("urn:koetai-reconciliator:source:reconcile"))); }
   }
   return { quads: out, canonical };
 }
@@ -48,7 +48,7 @@ export function reconcile(DF, quads) {
 // DataCite), OpenAlex author ids, Wikidata items. Within one (already merged) work, join authors whose names
 // match: exact normalised full name between two identified authors, or also family name + first initial
 // when one side is only a per-work URN. Matching never crosses works, so namesakes on different papers stay apart.
-const isAnon = (i) => i.startsWith("urn:koetai-bibliography:crossref-author:") || i.startsWith("urn:koetai-bibliography:datacite-author:");
+const isAnon = (i) => i.startsWith("urn:koetai-reconciliator:crossref-author:") || i.startsWith("urn:koetai-reconciliator:datacite-author:");
 const norm = (n) => n.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z\s-]/g, " ").replace(/-/g, " ").replace(/\s+/g, " ").trim();
 const fullKey = (n) => norm(n);
 const initialKey = (n) => { const p = norm(n).split(" ").filter(Boolean); return p.length > 1 ? `${p[0][0]} ${p.at(-1)}` : null; };

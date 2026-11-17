@@ -1,0 +1,18 @@
+# Everything needed to describe this person on Wikidata: names and identifiers, with the source of each.
+# Identifiers are only those a source states for this person directly (schema:identifier), never ones
+# picked up through name-based merging. Used by the "Add to Wikidata" panel (src/wikidata-create.js), not shown as a table.
+SELECT DISTINCT ?kind ?property ?value ?source WHERE {
+  {
+    GRAPH ?g { <{{iri}}> schema:name ?value } BIND("name" AS ?kind)
+  } UNION {
+    GRAPH ?g { <{{iri}}> schema:alternateName ?value } BIND("alias" AS ?kind)
+  } UNION {
+    GRAPH ?g { <{{iri}}> schema:identifier ?n } ?n schema:propertyID ?property ; schema:value ?value . BIND("id" AS ?kind)
+
+  } UNION {
+    GRAPH ?g { <{{iri}}> schema:sameAs ?wd }
+    FILTER(STRSTARTS(STR(?wd), "http://www.wikidata.org/entity/Q"))
+    BIND("wikidata" AS ?kind) BIND(STRAFTER(STR(?wd), "http://www.wikidata.org/entity/") AS ?value)
+  }
+  BIND(STRAFTER(STR(?g), "urn:koetai-reconciliator:source:") AS ?source)
+}

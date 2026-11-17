@@ -2,7 +2,7 @@
 // Covers the DOIs Crossref does not: Zenodo, figshare, arXiv, Dryad, OSF, institutional repositories.
 import { NS, iri, quadSink, dateLiteral } from "../model.js";
 import { politeJson } from "../http.js";
-const S = NS.schema, FS = NS.kb;
+const S = NS.schema, FS = NS.kr;
 const API = "https://api.datacite.org/dois";
 const FIELDS = "doi,titles,creators,publicationYear,dates,types,container,relatedIdentifiers,citationCount";
 
@@ -19,12 +19,12 @@ function mapRecord(DF, out, a) {
   if (a.citationCount) out.add(w, FS + "citedByCount", DF.literal(String(a.citationCount), DF.namedNode(NS.xsd + "integer")));
   (a.creators ?? []).forEach((c, i) => {
     const orcid = (c.nameIdentifiers ?? []).find((n) => /orcid/i.test(n.nameIdentifierScheme ?? ""))?.nameIdentifier?.match(ORCID_RE)?.[0];
-    const person = orcid ? iri.orcid(orcid) : `urn:koetai-bibliography:datacite-author:${encodeURIComponent(doi)}:${i + 1}`;
+    const person = orcid ? iri.orcid(orcid) : `urn:koetai-reconciliator:datacite-author:${encodeURIComponent(doi)}:${i + 1}`;
     if (c.nameType === "Organizational") out.add(person, NS.rdf + "type", S + "Organization");
     else out.add(person, NS.rdf + "type", S + "Person");
     out.lit(person, S + "name", c.givenName && c.familyName ? `${c.givenName} ${c.familyName}` : c.name);
     out.add(w, S + "author", person);
-    const as = `urn:koetai-bibliography:authorship:datacite:${encodeURIComponent(doi)}:${i + 1}`;
+    const as = `urn:koetai-reconciliator:authorship:datacite:${encodeURIComponent(doi)}:${i + 1}`;
     out.add(w, FS + "authorship", as);
     out.add(as, FS + "agent", person);
     out.add(as, FS + "position", DF.literal(String(i + 1), DF.namedNode(NS.xsd + "integer")));

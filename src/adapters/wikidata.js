@@ -45,7 +45,7 @@ function polite(fn) {
 }
 
 export async function lookupQid(ctx, scheme, value) {
-  const prop = { orcid: "P496", doi: "P356", issn: "P236" }[scheme];
+  const prop = { orcid: "P496", doi: "P356", issn: "P236", openalex: "P10283" }[scheme];
   if (!prop) return null;
   const v = scheme === "doi" ? value.toUpperCase() : value; // Wikidata stores DOIs upper-case
   const q = await template(ctx, "lookup", { prop, value: v });

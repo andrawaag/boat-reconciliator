@@ -1,4 +1,4 @@
-// The koetai-bibliography data model: schema.org, with one named graph per source.
+// The koetai-reconciliator data model: schema.org, with one named graph per source.
 // Identity: people are keyed by ORCID, works by DOI, venues by ISSN, everything else by Wikidata QID.
 // Adapters mint IRIs from whatever identifiers they have and assert schema:sameAs; src/reconcile.js merges them.
 
@@ -9,11 +9,11 @@ export const NS = {
   rdf: "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
   rdfs: "http://www.w3.org/2000/01/rdf-schema#",
   xsd: "http://www.w3.org/2001/XMLSchema#",
-  kb: "urn:koetai-bibliography:vocab:",
+  kr: "urn:koetai-reconciliator:vocab:",
 };
 
 export const SOURCES = ["wikidata", "orcid", "crossref", "datacite", "openalex"];
-export const graphFor = (source) => `urn:koetai-bibliography:source:${source}`;
+export const graphFor = (source) => `urn:koetai-reconciliator:source:${source}`;
 
 export const iri = {
   wikidata: (q) => NS.wd + q,
@@ -61,6 +61,20 @@ export function dateLiteral(DF, y, m, d) {
   if (m && d) return DF.literal(`${y}-${p(m)}-${p(d)}`, DF.namedNode(NS.xsd + "date"));
   if (m) return DF.literal(`${y}-${p(m)}`, DF.namedNode(NS.xsd + "gYearMonth"));
   return DF.literal(String(y), DF.namedNode(NS.xsd + "gYear"));
+}
+
+/**
+ * External identifiers that have a Wikidata property, as schema:identifier nodes:
+ *   <person> schema:identifier <urn:…:id:P1153:123> . <urn:…:id:P1153:123> schema:propertyID "P1153" ; schema:value "123" .
+ * The property id doubles as the identifier type, so the Add-to-Wikidata panel can use it directly.
+ */
+export function addIdentifier(sink, subject, property, value) {
+  if (!value) return;
+  const v = String(value).trim();
+  const node = `urn:koetai-reconciliator:id:${property}:${encodeURIComponent(v)}`;
+  sink.add(subject, NS.schema + "identifier", node);
+  sink.lit(node, NS.schema + "propertyID", property);
+  sink.lit(node, NS.schema + "value", v);
 }
 
 /** Small helper that collects quads for one source graph. */
