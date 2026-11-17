@@ -3,6 +3,7 @@
 // minting IRIs inside the query (BIND(IRI(CONCAT(...)))) makes QLever evaluate it over all of Wikidata.
 import { NS, iri, quadSink, dateLiteral } from "../model.js";
 import { aspectForTypes, TYPE_TO_ASPECT } from "../aspects.js";
+import { entityQuadsLive } from "../wikidata-live.js";
 import { WD_PROPS, VOCABS, addMapping, canonicalPrefix, parseTargetIri, target, wikidataFormsForObo } from "../vocab.js";
 
 const S = NS.schema;
@@ -107,9 +108,13 @@ export async function harvestWikidata(ctx, qid, aspect, opts = {}) {
     const q = await template(ctx, name, { q: qid, ...vars });
     return polite(async () => (await ctx.engine.queryQuads(q, { sources: source(ctx), httpTimeout: 60000 })).toArray());
   }))).flat();
+  // An item too new for the SPARQL copy: read its own statements from Wikidata directly.
+  const main = iri.wikidata(qid);
+  const live = raw.some((q) => q.subject.value === main) ? [] : await entityQuadsLive(ctx.fetch, ctx.DF, qid).catch(() => []);
+  raw.push(...live);
   if (!["term", "topic"].includes(aspect)) return mapToSchema(ctx.DF, raw, qid, aspect);
   const codes = await polite(async () => (await ctx.engine.queryQuads(mappingQuery(qid), { sources: source(ctx), httpTimeout: 60000 })).toArray()).catch(() => []);
-  return mapToSchema(ctx.DF, raw, qid, aspect).concat(mapCodes(ctx.DF, codes, qid, opts.obo));
+  return mapToSchema(ctx.DF, raw, qid, aspect).concat(mapCodes(ctx.DF, codes.length ? codes : live, qid, opts.obo));
 }
 
 // Terminology codes on the item itself (SNOMED CT, MeSH, ICD, UMLS, OBO ontologies, …) and P2888 exact match.

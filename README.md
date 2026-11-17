@@ -91,6 +91,16 @@ When an author page's graph has no Wikidata item for the person, the page shows 
 
 **Open in QuickStatements** opens the commands there, and you run them under your own Wikimedia account; the site never writes to Wikidata itself. Review the commands before you run them.
 
+### After you run the edits: Wikidata's SPARQL lag
+
+The SPARQL endpoint's copy of Wikidata (QLever by default) can lag behind edits by hours or days. So identifier and DOI checks also ask Wikidata's own search (`haswbstatement`), which sees new items within about a minute (`src/wikidata-live.js`), and check the hits against the items' claims:
+
+- **Harvest:** if SPARQL finds no item for an ORCID, DOI, ISSN, OpenAlex or OBO ID, live search is tried. An item found that way is read through the Wikidata API, so the page links to it at once. The page log notes "found by live search".
+- **"Not on Wikidata yet":** live search finds items created minutes ago. If one already carries every identifier, the panel says so instead of proposing edits.
+- **Works missing on Wikidata:** DOIs that SPARQL doesn't know are checked by live search, so a work created in an earlier batch is never proposed again.
+
+After running a batch, press **Refresh** (live pages) or **Fetch live instead** (snapshot pages) to harvest the page again. Snapshots are rebuilt on the next workflow run. Until SPARQL catches up, lists that come from SPARQL queries (for example the author's works on Wikidata) may still miss the new statements.
+
 ## Find an author's works missing on Wikidata
 
 Author pages have a **Works missing on Wikidata** panel. It lists works with a DOI that ORCID, Crossref, DataCite or OpenAlex attribute to the person but that Wikidata doesn't link to them (no author statement, P50). **Check against Wikidata** looks the DOIs up on Wikidata (P356) and sorts them into groups, each with checkboxes:

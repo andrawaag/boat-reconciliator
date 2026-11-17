@@ -5,6 +5,8 @@
 //     author name string (P2093), as the Author Disambiguator tool would.
 // Commands are QuickStatements V1, run by the visitor under their own Wikimedia account.
 
+import { findByStatementsLive } from "./wikidata-live.js";
+
 const SOURCE_ITEM = { crossref: "Q5188229", datacite: "Q821542", openalex: "Q107507571", orcid: "Q51044" };
 const SOURCE_PREF = ["crossref", "datacite", "openalex"];
 // Work type -> Wikidata class (P31). Crossref type, then OpenAlex type, then the schema.org class DataCite gives.
@@ -76,7 +78,7 @@ export async function gatherMissingWorks(run, authorIri) {
 }
 
 /** Look the candidates up on Wikidata: existing items by DOI (with their author name strings), co-authors by ORCID, venues by ISSN. */
-export async function checkOnWikidata(engine, endpoint, found) {
+export async function checkOnWikidata(engine, endpoint, found, fetchFn = globalThis.fetch) {
   // QLever answers 429 when all its threads are busy: retry with backoff.
   const select = async (q) => {
     for (let attempt = 0; ; attempt++) {
@@ -98,6 +100,13 @@ export async function checkOnWikidata(engine, endpoint, found) {
       const w = byDoi.get(r.get("doi").value.toUpperCase());
       if (w && !w.existing) w.existing = { qid: qidOf(r.get("item").value), nameStrings: [] };
     }
+  }
+  // DOIs the SPARQL copy doesn't know may be on items created since its last update (e.g. by an earlier batch from
+  // this panel): check them with Wikidata's live search so they are never proposed for creation twice.
+  const unknown = found.works.filter((w) => !w.existing);
+  for (const hit of await findByStatementsLive(fetchFn, unknown.map((w) => ({ property: "P356", value: w.doi.toUpperCase() })))) {
+    const w = byDoi.get(hit.value.toUpperCase());
+    if (w && !w.existing) w.existing = { qid: hit.qid, nameStrings: [], live: true };
   }
   const existing = found.works.filter((w) => w.existing);
   for (const batch of chunks(existing, 100)) {

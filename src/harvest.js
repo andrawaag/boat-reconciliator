@@ -6,6 +6,8 @@ import { NS, iri, keyToIri, keyString, aspectForKey, graphFor, SOURCES } from ".
 import { parseTargetIri, SKOS } from "./vocab.js";
 import { lookupQid, lookupOboQid, matchQidByCodes, detectAspect, harvestWikidata } from "./adapters/wikidata.js";
 import { harvestObo } from "./adapters/obo.js";
+import { findByStatementsLive } from "./wikidata-live.js";
+import { wikidataFormsForObo } from "./vocab.js";
 import { harvestOrcid } from "./adapters/orcid.js";
 import { harvestCrossref } from "./adapters/crossref.js";
 import { harvestDatacite } from "./adapters/datacite.js";
@@ -45,6 +47,21 @@ export async function harvest(ctx, key, aspectHint, onProgress = () => {}) {
       if (ids.wikidata) break;
     }
     if (!ids.wikidata && ids.obo) ids.wikidata = await lookupOboQid(ctx, ids.obo).catch(() => null);
+    // The SPARQL copy can lag behind Wikidata by hours or days: ask Wikidata's own search for items created since.
+    if (!ids.wikidata) {
+      const pairs = [];
+      if (ids.orcid) pairs.push({ property: "P496", value: ids.orcid });
+      if (ids.doi) pairs.push({ property: "P356", value: ids.doi.toUpperCase() });
+      if (ids.issn) pairs.push({ property: "P236", value: ids.issn });
+      if (ids.openalex) pairs.push({ property: "P10283", value: ids.openalex });
+      const forms = ids.obo && wikidataFormsForObo(ids.obo);
+      if (forms) for (const value of forms.values) pairs.push({ property: forms.property, value });
+      const hit = pairs.length ? (await findByStatementsLive(ctx.fetch, pairs).catch(() => []))[0] : null;
+      if (hit) {
+        ids.wikidata = hit.qid;
+        log.push({ source: "wikidata", what: `${hit.qid} found by live search (${hit.property} ${hit.value}); not yet in the SPARQL copy`, quads: 0, ms: 0 });
+      }
+    }
   }
   const aspect = aspectHint || aspectForKey(key)
     || (ids.wikidata && on("wikidata") ? await detectAspect(ctx, ids.wikidata).catch(() => "topic") : "topic");

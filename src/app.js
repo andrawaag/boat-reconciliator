@@ -5,6 +5,7 @@ import { normalizeConfig, panelsFor } from "./config.js";
 import { parseKey, keyString, iriToKey } from "./model.js";
 import { harvest } from "./harvest.js";
 import { searchObo } from "./adapters/obo.js";
+import { findByStatementsLive } from "./wikidata-live.js";
 import { gatherFixes, buildFixCommands, fixKey } from "./wikidata-fix.js";
 import { gatherMissingWorks, checkOnWikidata, buildWorkCommands, workStatus, P31_LABEL } from "./wikidata-works.js";
 import { gatherCandidate, findExisting, searchByName, buildCommands, quickStatementsUrl, propertyLabel, propertyUrl } from "./wikidata-create.js";
@@ -259,10 +260,24 @@ async function wikidataPanel(graph) {
   const el = h("section", { class: "panel wide wd-create", id: "panel-add-to-wikidata" }, h("header", {}, h("h2", {}, "Not on Wikidata yet"), status), box);
 
   const [existing, byName] = await Promise.all([
-    findExisting(engine, endpoints[settings.endpoint].url, cand.ids).catch(() => []),
+    // SPARQL copy plus Wikidata's live search, which also sees items created minutes ago.
+    Promise.all([
+      findExisting(engine, endpoints[settings.endpoint].url, cand.ids).catch(() => []),
+      findByStatementsLive(fetch, cand.ids).catch(() => []),
+    ]).then(([a, b]) => [...new Map([...a, ...b].map((e) => [`${e.qid}|${e.property}|${e.value}`, e])).values()]),
     searchByName(cand.label).catch(() => []),
   ]);
   status.textContent = existing.length ? "Identifier already on Wikidata" : `${cand.ids.length} identifiers found`;
+  // Everything is already on one item (e.g. created minutes ago): nothing to do but refresh.
+  const done = [...new Set(existing.map((e) => e.qid))].find((q) => cand.ids.every((x) => existing.some((e) => e.qid === q && e.property === x.property && e.value === x.value)));
+  if (done) {
+    el.querySelector("h2").textContent = "On Wikidata";
+    status.textContent = done;
+    box.replaceChildren(h("p", {}, h("a", { href: `https://www.wikidata.org/wiki/${done}`, target: "_blank", rel: "noopener" }, done),
+      " carries all of this person's identifiers. This page's data was gathered before that; ",
+      h("button", { type: "button", class: "linkish", onclick: () => { graphs.clear(); route(); } }, "refresh it"), " to link them."));
+    return el;
+  }
 
   let target = existing[0]?.qid ?? null;
   const textarea = h("textarea", { class: "qs", rows: 10, spellcheck: "false", "aria-label": "QuickStatements commands" });
@@ -296,7 +311,7 @@ async function wikidataPanel(graph) {
     h("div", { class: "actions" },
       h("button", { type: "button", class: "primary", onclick: () => window.open(quickStatementsUrl(textarea.value), "_blank", "noopener") }, "Open in QuickStatements"),
       h("button", { type: "button", onclick: async (e) => { try { await navigator.clipboard.writeText(textarea.value); e.target.textContent = "Copied"; } catch { textarea.select(); } } }, "Copy commands")),
-    h("p", { class: "muted small" }, "Review and edit the commands above before running them. In QuickStatements, log in, press Run, and check the new item. Then use “Fetch live instead” on this page to see it linked.")).childNodes);
+    h("p", { class: "muted small" }, "Review and edit the commands above before running them. In QuickStatements, log in, press Run, and check the new item. Then refresh this page’s data (the Refresh or “Fetch live instead” button at the top) to see it linked.")).childNodes);
   regenerate();
   return el;
 }
@@ -470,7 +485,8 @@ async function entityPage(aspectHint, rawKey) {
           h("span", { class: graph.snapshot ? "mode snap" : "mode live" }, graph.snapshot ? "Static snapshot" : "Live harvest"),
           h("span", { class: "muted" }, `${graph.quads.length.toLocaleString()} quads · canonical IRI `), h("code", {}, graph.iri),
           h("button", { type: "button", onclick: () => downloadGraph(graph) }, "Download graph (N-Quads)"),
-          graph.snapshot && settings.mode !== "live" && h("button", { type: "button", onclick: () => { settings.mode = "live"; $("#mode").value = "live"; store.set("mode", "live"); graphs.clear(); route(); } }, "Fetch live instead")),
+          graph.snapshot && settings.mode !== "live" && h("button", { type: "button", onclick: () => { settings.mode = "live"; $("#mode").value = "live"; store.set("mode", "live"); graphs.clear(); route(); } }, "Fetch live instead"),
+          !graph.snapshot && h("button", { type: "button", title: "Harvest this page again from all sources", onclick: () => { graphs.clear(); route(); } }, "Refresh")),
         h("details", { class: "provenance" }, h("summary", {}, "How this graph was gathered"), log)),
       grid));
   for (const p of panels) {
