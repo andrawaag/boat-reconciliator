@@ -1,0 +1,15 @@
+# Author lists (position, person, name, Wikidata item) of the works in missing-works.rq, per source.
+SELECT ?work ?src ?pos ?agent (SAMPLE(?n) AS ?name) (SAMPLE(?q) AS ?qid) WHERE {
+  {
+    SELECT DISTINCT ?work WHERE {
+      ?work schema:author <{{iri}}> .
+      FILTER(STRSTARTS(STR(?work), "https://doi.org/"))
+      MINUS { GRAPH <urn:koetai-reconciliator:source:wikidata> { ?work schema:author ?anyone } }
+    }
+  }
+  GRAPH ?g { ?work kr:authorship ?as }
+  ?as kr:agent ?agent ; kr:position ?pos .
+  OPTIONAL { ?agent schema:name ?n }
+  OPTIONAL { ?agent schema:sameAs ?q FILTER(STRSTARTS(STR(?q), "http://www.wikidata.org/entity/Q")) }
+  BIND(STRAFTER(STR(?g), "urn:koetai-reconciliator:source:") AS ?src)
+} GROUP BY ?work ?src ?pos ?agent

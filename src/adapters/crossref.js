@@ -20,6 +20,7 @@ function mapWork(DF, out, item) {
   const doi = item.DOI.toLowerCase();
   const w = iri.doi(doi);
   out.add(w, NS.rdf + "type", S + "ScholarlyArticle");
+  out.lit(w, FS + "workType", item.type ? `crossref:${item.type}` : null); // e.g. journal-article, posted-content
   out.lit(w, S + "name", plain(item.title?.[0]));
   const [y, m, d] = item.issued?.["date-parts"]?.[0] ?? [];
   out.add(w, S + "datePublished", dateLiteral(DF, y, m, d));

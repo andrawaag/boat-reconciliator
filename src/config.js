@@ -13,6 +13,7 @@ export const DEFAULT_CONFIG = {
   liveHarvest: true,
   wikidataCreate: true,
   wikidataFixes: true,
+  wikidataWorks: true,
   seeds: [],
   panels: {},
 };

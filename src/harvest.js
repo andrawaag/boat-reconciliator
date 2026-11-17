@@ -102,7 +102,9 @@ export async function harvest(ctx, key, aspectHint, onProgress = () => {}) {
   // 4. DOIs listed in ORCID that no source has described yet: try Crossref, then DataCite.
   if (aspect === "author") {
     const orcidDois = results.find((r) => r?.dois)?.dois ?? [];
-    const described = () => new Set(quads.filter((q) => q.predicate.value === NS.schema + "name").map((q) => q.subject.value));
+    // "Described" means a source with author lists has the work; ORCID's own work summaries have titles but no authors.
+    const orcidGraph = graphFor("orcid");
+    const described = () => new Set(quads.filter((q) => q.predicate.value === NS.schema + "name" && q.graph.value !== orcidGraph).map((q) => q.subject.value));
     let missing = orcidDois.filter((d) => !described().has(iri.doi(d)));
     if (missing.length && on("crossref")) await step("crossref", `${missing.length} more DOIs from ORCID`, () => harvestCrossref(ctx, { dois: missing }));
     missing = orcidDois.filter((d) => !described().has(iri.doi(d)));

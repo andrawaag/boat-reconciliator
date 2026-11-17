@@ -28,6 +28,7 @@ Snapshots refresh every Monday. Run the workflow by hand (**Actions → site →
 | `wikidataEndpoint` | Wikidata SPARQL endpoint (default QLever, which holds the full graph) |
 | `liveHarvest` | `false` limits the site to its snapshots: no live API calls from visitors' browsers |
 | `wikidataCreate` | `false` hides the "Not on Wikidata yet" panel on author pages (default `true`) |
+| `wikidataWorks` | `false` hides the "Works missing on Wikidata" panel on author pages (default `true`) |
 | `wikidataFixes` | `false` hides the "Improve Wikidata" panel on ontology term pages (default `true`) |
 | `seeds` | Entities to pre-build and feature on the home page: `orcid:…`, `doi:…`, `issn:…`, `wikidata:Q…`, `openalex:A…/W…/S…/T…`, `obo:MONDO_0005148` (an OBO term; `MONDO:0005148` works too). An object `{ "key": "…", "aspect": "author" }` forces the page type |
 | `panels` | Per page type (`author`, `work`, `topic`, `venue`, `term`, `common`): `hide` built-in panels by id, `add` your own |
@@ -89,6 +90,17 @@ When an author page's graph has no Wikidata item for the person, the page shows 
 - generates [QuickStatements](https://www.wikidata.org/wiki/Help:QuickStatements) V1 commands in an editable box. A new item gets an English label, the description "researcher", aliases from ORCID's other names, P31 human (Q5), P106 researcher (Q1650915) and the identifiers. Each statement has a reference: stated in (S248) ORCID (Q51044) or OpenAlex (Q107507571), reference URL (S854) and retrieved (S813).
 
 **Open in QuickStatements** opens the commands there, and you run them under your own Wikimedia account; the site never writes to Wikidata itself. Review the commands before you run them.
+
+## Find an author's works missing on Wikidata
+
+Author pages have a **Works missing on Wikidata** panel. It lists works with a DOI that ORCID, Crossref, DataCite or OpenAlex attribute to the person but that Wikidata doesn't link to them (no author statement, P50). **Check against Wikidata** looks the DOIs up on Wikidata (P356) and sorts them into groups, each with checkboxes:
+
+- **Add this author to existing items:** the work is on Wikidata and its author list names this person. The command adds P50 with the series ordinal (P1545) and the name as written (P1932). It can also remove the matching author name string (P2093), as the Author Disambiguator tool does. Ticked by default.
+- **Create new items:** the work is not on Wikidata. A new item gets a label, a type (P31: scholarly article, preprint, conference paper, chapter, data set, software, book or thesis, from the Crossref or OpenAlex work type), the title (P1476), DOI, publication date with matching precision, venue (P1433, by ISSN) and all authors in order. Authors with a Wikidata item (found by ORCID) become P50, the others P2093 name strings. Papers are ticked by default; data sets, software and books are not.
+- **Only claimed by ORCID:** on Wikidata, but the person isn't in the work's author list (for example a group author). Unticked.
+- **Not proposed:** works with no author list from Crossref, DataCite or OpenAlex, unsupported types, and duplicates. A duplicate is a DOI whose title matches another candidate's, such as Zenodo's version DOIs; only one item per title is proposed, and none if one of them is already on Wikidata.
+
+Every statement cites the metadata source (stated in Crossref Q5188229, DataCite Q821542, OpenAlex Q107507571 or ORCID Q51044), the DOI URL and the retrieval date. Titles get language `en` by default; change it in the panel. If the person has no Wikidata item yet, create it first with the **Not on Wikidata yet** panel. Otherwise new items list them as a name string.
 
 ## Ontology terms and terminology mappings
 

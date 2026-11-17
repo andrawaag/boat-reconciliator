@@ -6,6 +6,7 @@ import { parseKey, keyString, iriToKey } from "./model.js";
 import { harvest } from "./harvest.js";
 import { searchObo } from "./adapters/obo.js";
 import { gatherFixes, buildFixCommands, fixKey } from "./wikidata-fix.js";
+import { gatherMissingWorks, checkOnWikidata, buildWorkCommands, workStatus, P31_LABEL } from "./wikidata-works.js";
 import { gatherCandidate, findExisting, searchByName, buildCommands, quickStatementsUrl, propertyLabel, propertyUrl } from "./wikidata-create.js";
 
 const engine = new QueryEngine();
@@ -300,6 +301,87 @@ async function wikidataPanel(graph) {
   return el;
 }
 
+// ---------- Works missing on Wikidata (authors) ----------
+const PAPER_TYPES = new Set(["Q13442814", "Q23927052", "Q580922", "Q21481766", "Q7318358"]);
+async function missingWorksPanel(graph) {
+  const run = async (file) => (await engine.queryBindings(fillPanel(await loadText("queries/prefixes.rq"), await loadText(file), graph.iri), { sources: [graph.store], unionDefaultGraph: true })).toArray();
+  const found = await gatherMissingWorks(run, graph.iri);
+  if (!found.works.length) return null;
+
+  const status = h("span", { class: "timing" }, `${found.works.length} candidates`);
+  const body = h("div", { class: "panel-body" });
+  const el = h("section", { class: "panel wide wd-create", id: "panel-missing-works" }, h("header", {}, h("h2", {}, "Works missing on Wikidata"), status), body);
+  const check = h("button", { type: "button", class: "primary" }, "Check against Wikidata");
+  body.append(
+    h("p", {}, `${found.works.length} works with a DOI are attributed to this person by ORCID, Crossref, DataCite or OpenAlex but are not linked to `,
+      found.authorQid ? h("a", { href: `https://www.wikidata.org/wiki/${found.authorQid}`, target: "_blank", rel: "noopener" }, found.authorQid) : "a Wikidata item for them",
+      " (no “author” statement). Check them against Wikidata by DOI to see which need a new item and which only need this author added."),
+    h("div", { class: "actions" }, check));
+  check.onclick = async () => {
+    check.disabled = true; check.textContent = "Checking…";
+    try { await checkOnWikidata(engine, endpoints[settings.endpoint].url, found); }
+    catch (err) { check.disabled = false; check.textContent = "Check against Wikidata"; body.append(h("p", { class: "error" }, String(err.message ?? err))); return; }
+    renderChecked();
+  };
+
+  function renderChecked() {
+    const groups = { link: [], create: [], claimed: [], skipped: [] };
+    for (const w of found.works) {
+      const s = workStatus(found, w);
+      (groups[s] ?? groups.skipped).push(Object.assign(w, { status: s }));
+    }
+    const chosen = new Set([...groups.link, ...groups.create.filter((w) => PAPER_TYPES.has(w.p31))].map((w) => w.doi));
+    const opts = { removeNameStrings: true, language: "en" };
+    const textarea = h("textarea", { class: "qs", rows: 10, spellcheck: "false", "aria-label": "QuickStatements commands" });
+    const counter = h("span", { class: "muted small" });
+    const regenerate = () => {
+      textarea.value = buildWorkCommands(found, chosen, opts);
+      const n = found.works.filter((w) => chosen.has(w.doi));
+      counter.textContent = `${n.filter((w) => w.status === "create").length} new items, ${n.filter((w) => w.status !== "create").length} author statements on existing items`;
+    };
+    const boxes = new Map();
+    const row = (w, extra) => {
+      const box = h("input", { type: "checkbox", checked: chosen.has(w.doi), onchange: (e) => { e.target.checked ? chosen.add(w.doi) : chosen.delete(w.doi); regenerate(); } });
+      boxes.set(w.doi, box);
+      return h("li", {}, h("label", {}, box, " ",
+        h("a", { href: `#/work/doi:${w.doi}` }, w.title || w.doi), " ",
+        h("span", { class: "muted" }, [w.date.slice(0, 10), w.p31 ? P31_LABEL[w.p31] : null].filter(Boolean).join(" · ")), " ",
+        h("span", { class: `badge src-${w.source}` }, w.source), extra ?? null));
+    };
+    const toggleAll = (list, on) => { for (const w of list) { on ? chosen.add(w.doi) : chosen.delete(w.doi); boxes.get(w.doi).checked = on; } regenerate(); };
+    const group = (title, list, note, extra) => list.length ? [
+      h("h3", {}, `${title} (${list.length})`, " ",
+        h("button", { type: "button", class: "linkish", onclick: () => toggleAll(list, true) }, "all"), " / ",
+        h("button", { type: "button", class: "linkish", onclick: () => toggleAll(list, false) }, "none")),
+      note ? h("p", { class: "muted small" }, note) : null,
+      h("ul", { class: "fixes worklist" }, list.map((w) => row(w, extra?.(w)))),
+    ] : null;
+    const wdItem = (w) => [" → ", h("a", { href: `https://www.wikidata.org/wiki/${w.existing.qid}`, target: "_blank", rel: "noopener" }, w.existing.qid),
+      w.myPosition ? ` as author #${w.myPosition}` : "", w.removable ? `, replacing name string “${w.removable}”` : ""];
+    const skippedWhy = { "no-authors": "no author list from Crossref, DataCite or OpenAlex", unsupported: "work type not supported", "link-blocked": "on Wikidata; create this person's item first", duplicate: "same title as another DOI that is on Wikidata or proposed above (e.g. another Zenodo version)" };
+
+    status.textContent = `${groups.create.length} to create · ${groups.link.length} to link`;
+    body.replaceChildren(...h("div", {},
+      !found.authorQid ? h("p", { class: "warn" }, "This person has no Wikidata item yet, so new items list them as an author name string (P2093). Create their item first (see “Not on Wikidata yet”) to link them properly.") : null,
+      group("Add this author to existing items", groups.link, "These works are on Wikidata and their author list names this person, but the item has no author statement for them.", wdItem),
+      group("Create new items", groups.create, "Not on Wikidata. Papers are ticked; data sets, software and books are not. Each item gets title, type, DOI, date, venue and all authors in order (Wikidata items where known, otherwise name strings)."),
+      group("Only claimed by ORCID", groups.claimed, "On Wikidata, but this person is not in the work's author list (for example a group author). Check before adding.", wdItem),
+      groups.skipped.length ? [h("h3", {}, `Not proposed (${groups.skipped.length})`), h("ul", { class: "matches" }, groups.skipped.map((w) => h("li", {}, h("a", { href: `#/work/doi:${w.doi}` }, w.title || w.doi), ` · ${skippedWhy[w.status] ?? w.status}`)))] : null,
+      h("h3", {}, "QuickStatements"),
+      h("p", { class: "mode-line" },
+        h("label", {}, h("input", { type: "checkbox", checked: true, onchange: (e) => { opts.removeNameStrings = e.target.checked; regenerate(); } }), " remove the matching author name string (P2093) when adding the author"),
+        " · title language ", h("input", { type: "text", value: "en", size: 3, class: "lang", onchange: (e) => { opts.language = e.target.value.trim() || "en"; regenerate(); } })),
+      textarea,
+      h("div", { class: "actions" },
+        h("button", { type: "button", class: "primary", onclick: () => window.open(quickStatementsUrl(textarea.value), "_blank", "noopener") }, "Open in QuickStatements"),
+        h("button", { type: "button", onclick: async (e) => { try { await navigator.clipboard.writeText(textarea.value); e.target.textContent = "Copied"; } catch { textarea.select(); } } }, "Copy commands"),
+        counter),
+      h("p", { class: "muted small" }, "Statements cite the source of the metadata (Crossref, DataCite, OpenAlex or ORCID) with the DOI and today's date. Large batches are easier to run by copying the commands into QuickStatements than through the link. You run the edits under your own Wikimedia account; review them first.")).childNodes);
+    regenerate();
+  }
+  return el;
+}
+
 // ---------- Improve Wikidata (ontology terms) ----------
 async function termFixPanel(graph) {
   const run = async (file) => (await engine.queryBindings(fillPanel(await loadText("queries/prefixes.rq"), await loadText(file), graph.iri), { sources: [graph.store], unionDefaultGraph: true })).toArray();
@@ -398,6 +480,12 @@ async function entityPage(aspectHint, rawKey) {
   }
   if (aspect === "author" && config.wikidataCreate && config.sources.includes("wikidata"))
     wikidataPanel(graph).then((el) => { if (el && myRoute === routeId) grid.prepend(el); }).catch((err) => console.warn("Add-to-Wikidata panel:", err));
+  if (aspect === "author" && config.wikidataWorks && config.sources.includes("wikidata"))
+    missingWorksPanel(graph).then((el) => {
+      if (!el || myRoute !== routeId) return;
+      const after = grid.querySelector("#panel-works");
+      after ? after.after(el) : grid.append(el);
+    }).catch((err) => console.warn("Missing-works panel:", err));
   if (aspect === "term" && config.wikidataFixes && config.sources.includes("wikidata"))
     termFixPanel(graph).then((el) => {
       if (!el || myRoute !== routeId) return;

@@ -147,6 +147,9 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
 .wd-create .fixes { list-style: none; margin: 0; padding: 0; font-size: 14px; }
 .wd-create .fixes li { margin: 4px 0; }
 .wd-create .fixes input { margin-right: 4px; vertical-align: -1px; }
+.wd-create .worklist { max-height: 320px; overflow: auto; border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; }
+.wd-create .worklist .muted { font-size: 12.5px; }
+.wd-create input.lang { font: inherit; font-size: 13px; width: 3.5em; padding: 1px 4px; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); color: var(--ink); }
 .wd-create .mode-line { font-size: 14px; margin: 0 0 6px; }
 .small { font-size: 12.5px; }
 

@@ -41,6 +41,7 @@ function venue(out, src) {
 function mapWork(DF, out, w, { references = false } = {}) {
   const node = workIri(out, w);
   out.add(node, NS.rdf + "type", S + (w.type === "dataset" ? "Dataset" : "ScholarlyArticle"));
+  out.lit(node, FS + "workType", w.type ? `openalex:${w.type}` : null); // e.g. article, preprint, dataset
   out.lit(node, S + "name", plain(w.display_name));
   const d = w.publication_date?.match(/^(\d{4})-(\d\d)-(\d\d)/);
   out.add(node, S + "datePublished", d ? dateLiteral(DF, d[1], d[2], d[3]) : dateLiteral(DF, w.publication_year));
@@ -48,10 +49,11 @@ function mapWork(DF, out, w, { references = false } = {}) {
   const v = venue(out, w.primary_location?.source);
   if (v) out.add(node, S + "isPartOf", v);
   (w.authorships ?? []).forEach((a, i) => {
-    if (!a.author?.id) return;
+    if (!a.author?.display_name && !a.author?.id) return;
     const orcid = a.author.orcid?.match(/\d{4}-\d{4}-\d{4}-\d{3}[\dX]/i)?.[0];
-    const person = orcid ? iri.orcid(orcid) : a.author.id;
-    if (orcid) out.add(person, S + "sameAs", a.author.id);
+    // Authors OpenAlex has not disambiguated have no id: give them a per-work id, as Crossref and DataCite authors get.
+    const person = orcid ? iri.orcid(orcid) : a.author.id ?? `urn:koetai-reconciliator:openalex-author:${short(w.id)}:${i + 1}`;
+    if (orcid && a.author.id) out.add(person, S + "sameAs", a.author.id);
     out.add(person, NS.rdf + "type", S + "Person");
     out.lit(person, S + "name", a.author.display_name);
     out.add(node, S + "author", person);
