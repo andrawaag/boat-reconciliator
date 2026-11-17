@@ -13,7 +13,8 @@ export const OBO = "http://purl.obolibrary.org/obo/";
 
 const obo = (P) => (id) => `${OBO}${P}_${id}`;
 // Canonical prefix -> label, IRI builder, Wikidata property, and how Wikidata writes the value.
-// wdForms(id) lists the spellings Wikidata uses for that property, e.g. "GO:0008150", "MONDO_0005148" or "0001718".
+// wdForms(id) lists the spellings Wikidata uses for that property, most common first (the one new statements use),
+// e.g. "GO:0008150", "MONDO_0005148" or "0001718". wdItem: the ontology's own Wikidata item, for "stated in" references.
 export const VOCABS = {
   SCTID: { label: "SNOMED CT", iri: (id) => `http://snomed.info/id/${id}`, wd: "P5806", aliases: ["SNOMEDCT", "SNOMEDCT_US", "SNOMED", "SNOMEDCT_US_2023_09_01"] },
   MESH: { label: "MeSH", iri: (id) => `http://id.nlm.nih.gov/mesh/${id}`, wd: "P486", aliases: ["MSH"] },
@@ -26,13 +27,13 @@ export const VOCABS = {
   ORPHANET: { label: "Orphanet", iri: (id) => `http://www.orpha.net/ORDO/Orphanet_${id}`, wd: "P1550", aliases: ["ORPHA", "ORDO", "Orphanet"] },
   MEDGEN: { label: "MedGen", iri: (id) => `https://www.ncbi.nlm.nih.gov/medgen/${id}` },
   // OBO Foundry ontologies with a Wikidata property.
-  MONDO: { label: "MONDO", iri: obo("MONDO"), wd: "P5270", wdForms: (id) => [`MONDO:${id}`, `MONDO_${id}`] },
-  DOID: { label: "Disease Ontology", iri: obo("DOID"), wd: "P699", wdForms: (id) => [`DOID:${id}`] },
-  HP: { label: "HPO", iri: obo("HP"), wd: "P3841", wdForms: (id) => [`HP:${id}`] },
-  GO: { label: "Gene Ontology", iri: obo("GO"), wd: "P686", wdForms: (id) => [`GO:${id}`] },
+  MONDO: { label: "MONDO", iri: obo("MONDO"), wd: "P5270", wdForms: (id) => [`MONDO_${id}`, `MONDO:${id}`], wdItem: "Q27468140" },
+  DOID: { label: "Disease Ontology", iri: obo("DOID"), wd: "P699", wdForms: (id) => [`DOID:${id}`], wdItem: "Q5282129" },
+  HP: { label: "HPO", iri: obo("HP"), wd: "P3841", wdForms: (id) => [`HP:${id}`], wdItem: "Q17027854" },
+  GO: { label: "Gene Ontology", iri: obo("GO"), wd: "P686", wdForms: (id) => [`GO:${id}`], wdItem: "Q135085" },
   NCIT: { label: "NCI Thesaurus", iri: obo("NCIT"), wd: "P1748", wdForms: (id) => [id], aliases: ["NCI"] },
   UBERON: { label: "UBERON", iri: obo("UBERON"), wd: "P1554", wdForms: (id) => [id, `UBERON:${id}`] },
-  CL: { label: "Cell Ontology", iri: obo("CL"), wd: "P7963", wdForms: (id) => [`CL:${id}`, `CL_${id}`] },
+  CL: { label: "Cell Ontology", iri: obo("CL"), wd: "P7963", wdForms: (id) => [`CL_${id}`, `CL:${id}`] },
   CHEBI: { label: "ChEBI", iri: obo("CHEBI"), wd: "P683", wdForms: (id) => [id, `CHEBI:${id}`] },
   NCBITaxon: { label: "NCBI Taxonomy", iri: obo("NCBITaxon"), wd: "P685", wdForms: (id) => [id] },
   SO: { label: "Sequence Ontology", iri: obo("SO"), wd: "P3986", wdForms: (id) => [`SO:${id}`] },

@@ -173,16 +173,16 @@
       "aspect": "term",
       "iri": "http://purl.obolibrary.org/obo/MONDO_0005148",
       "file": "data/term/obo_MONDO_0005148.nq.gz",
-      "quads": 15204,
-      "bytes": 219755,
-      "generated": "2026-11-17T15:17:35.359Z",
+      "quads": 15224,
+      "bytes": 219945,
+      "generated": "2026-11-17T15:28:25.592Z",
       "endpoint": "https://qlever.dev/api/wikidata",
       "log": [
         {
           "source": "obo",
           "what": "term, hierarchy and cross-references (OLS)",
           "quads": 135,
-          "ms": 333
+          "ms": 444
         },
         {
           "source": "reconcile",
@@ -193,8 +193,8 @@
         {
           "source": "wikidata",
           "what": "term neighbourhood",
-          "quads": 20992,
-          "ms": 1669
+          "quads": 21012,
+          "ms": 1335
         }
       ]
     }
@@ -212,5 +212,5 @@
     "openalex:C2777180221": "obo:MONDO_0005148",
     "openalex:C2910068830": "obo:MONDO_0005148"
   },
-  "generated": "2026-11-17T15:17:35.361Z"
+  "generated": "2026-11-17T15:28:25.595Z"
 }

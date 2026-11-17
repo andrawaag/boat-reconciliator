@@ -1,0 +1,82 @@
+// "Improve Wikidata" for ontology terms: compare the term's codes with the linked Wikidata item and propose
+// QuickStatements (V1) edits. The visitor reviews them and runs them under their own Wikimedia account.
+//   - add the term's own ID when the item was only matched through shared codes;
+//   - add codes the ontology states as exact matches but the item lacks (with qualifier P4390 = exact match);
+//   - optionally remove an ID of the same ontology that the item holds but the ontology has made obsolete.
+// Codes that only Wikidata has are listed for review; nothing is proposed for them.
+import { VOCABS, canonicalPrefix, parseTargetIri } from "./vocab.js";
+import { oboTermStatus } from "./adapters/obo.js";
+
+const EXACT_MATCH = "Q39893449"; // value for P4390 "mapping relation type"
+const clean = (s) => String(s).replace(/["\t\n\r|]/g, " ").trim();
+
+export async function gatherFixes(run, termIri, fetchFn) {
+  const oboId = termIri.replace("http://purl.obolibrary.org/obo/", "");
+  const [prefix, local] = oboId.split("_");
+  const ownCanon = canonicalPrefix(prefix);
+  const own = ownCanon ? VOCABS[ownCanon] : null;
+  const [fixRows, mapRows] = await Promise.all([run("queries/term/wikidata-fix.rq"), run("queries/term/mappings.rq")]);
+
+  let qid = null, ownOnWikidata = false;
+  const matchedBy = [], wdValues = new Map();
+  for (const b of fixRows) {
+    const kind = b.get("kind").value;
+    if (kind === "item") qid = b.get("item").value.split("/").pop();
+    else if (kind === "own") ownOnWikidata = true;
+    else if (kind === "matchedBy") matchedBy.push(b.get("value").value);
+    else if (kind === "value") {
+      const code = b.get("code").value, v = b.get("value").value;
+      if (!/^https?:/.test(v)) (wdValues.get(code) ?? wdValues.set(code, []).get(code)).push(v);
+    }
+  }
+  const result = { qid, oboId, label: own?.label ?? prefix, matchedBy, own: null, additions: [], removals: [], review: [] };
+  if (!qid) return result;
+
+  const reference = { item: own?.wdItem ?? null, url: termIri };
+  if (own?.wd && !ownOnWikidata) {
+    result.own = { property: own.wd, value: own.wdForms ? own.wdForms(local)[0] : local, vocabulary: own.label, code: `${prefix}:${local}`, url: termIri, reference };
+  }
+
+  for (const b of mapRows) {
+    const code = b.get("code")?.value;
+    if (!code) continue;
+    const sources = new Set((b.get("sources")?.value ?? "").split(" "));
+    const relation = b.get("relation")?.value ?? "";
+    const label = b.get("codeLabel")?.value ?? code;
+    const t = parseTargetIri(code);
+    const canon = t && canonicalPrefix(t.prefix);
+    const vocab = canon && VOCABS[canon];
+    const row = { vocabulary: vocab?.label ?? b.get("vocabulary")?.value ?? "", code: label, url: code };
+    if (sources.has("obo") && !sources.has("wikidata")) {
+      if (vocab?.wd && relation.includes("exact") && canon !== ownCanon) {
+        result.additions.push({ ...row, property: vocab.wd, value: vocab.wdForms ? vocab.wdForms(label)[0] : label, reference });
+      }
+    } else if (sources.has("wikidata") && !sources.has("obo")) {
+      // Same ontology, different term: is the one on Wikidata obsolete?
+      if (canon && canon === ownCanon && vocab.wd && wdValues.has(code)) {
+        const status = await oboTermStatus(fetchFn, `${prefix}_${label}`).catch(() => null);
+        if (status?.obsolete) {
+          for (const value of wdValues.get(code)) result.removals.push({ ...row, property: vocab.wd, value, status });
+          continue;
+        }
+        result.review.push({ ...row, note: status ? `“${status.label}”, a different ${own.label} term` : `a different ${own.label} term` });
+      } else {
+        result.review.push({ ...row, note: `only on Wikidata` });
+      }
+    }
+  }
+  return result;
+}
+
+/** QuickStatements V1 for the chosen fixes. `chosen` holds the keys returned by fixKey(). */
+export function buildFixCommands(fix, chosen, { today = new Date().toISOString().slice(0, 10) } = {}) {
+  const q = fix.qid;
+  const ref = (r) => [r.item ? `S248\t${r.item}` : null, `S854\t"${clean(r.url)}"`, `S813\t+${today}T00:00:00Z/11`].filter(Boolean).join("\t");
+  const lines = [];
+  if (fix.own && chosen.has(fixKey(fix.own))) lines.push(`${q}\t${fix.own.property}\t"${clean(fix.own.value)}"\t${ref(fix.own.reference)}`);
+  for (const a of fix.additions) if (chosen.has(fixKey(a))) lines.push(`${q}\t${a.property}\t"${clean(a.value)}"\tP4390\t${EXACT_MATCH}\t${ref(a.reference)}`);
+  for (const r of fix.removals) if (chosen.has(fixKey(r))) lines.push(`-${q}\t${r.property}\t"${clean(r.value)}"`);
+  return lines.join("\n");
+}
+
+export const fixKey = (x) => `${x.property}|${x.value}`;

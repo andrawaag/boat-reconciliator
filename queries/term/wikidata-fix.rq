@@ -1,0 +1,8 @@
+# Inputs for the "Improve Wikidata" panel (src/wikidata-fix.js), not shown as a table:
+# the linked Wikidata item, whether it already holds this term's own ID, and codes as Wikidata writes them.
+SELECT ?kind ?item ?code ?value WHERE {
+  { <{{iri}}> schema:sameAs ?item FILTER(STRSTARTS(STR(?item), "http://www.wikidata.org/entity/Q")) BIND("item" AS ?kind) }
+  UNION { <{{iri}}> kr:wikidataOwnId ?value BIND("own" AS ?kind) }
+  UNION { <{{iri}}> kr:wikidataMatchedBy ?value BIND("matchedBy" AS ?kind) }
+  UNION { GRAPH <urn:koetai-reconciliator:source:wikidata> { ?code kr:wikidataValue ?value } BIND("value" AS ?kind) }
+}

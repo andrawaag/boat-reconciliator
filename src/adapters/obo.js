@@ -91,6 +91,15 @@ export async function harvestObo(ctx, oboId) {
   return out.quads;
 }
 
+/** Label and obsolete status of a term, for checking IDs that Wikidata holds. */
+export async function oboTermStatus(fetchFn, oboId) {
+  const termIri = iri.obo(oboId);
+  const res = await fetchFn(`${OLS}/terms?iri=${encodeURIComponent(termIri)}&size=50`).then((r) => r.json());
+  const terms = res?._embedded?.terms ?? [];
+  const t = terms.find((x) => x.is_defining_ontology) ?? terms[0];
+  return t ? { label: t.label, obsolete: !!t.is_obsolete, replacedBy: t.term_replaced_by ?? null } : null;
+}
+
 /** OLS search, for the site's search box: terms whose label or synonym matches. */
 export async function searchObo(fetchFn, text, rows = 6) {
   const url = `${OLS}/search?q=${encodeURIComponent(text)}&rows=${rows + 4}&local=true&fieldList=iri,label,obo_id,ontology_prefix,short_form`;

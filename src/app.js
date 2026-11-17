@@ -5,6 +5,7 @@ import { normalizeConfig, panelsFor } from "./config.js";
 import { parseKey, keyString, iriToKey } from "./model.js";
 import { harvest } from "./harvest.js";
 import { searchObo } from "./adapters/obo.js";
+import { gatherFixes, buildFixCommands, fixKey } from "./wikidata-fix.js";
 import { gatherCandidate, findExisting, searchByName, buildCommands, quickStatementsUrl, propertyLabel, propertyUrl } from "./wikidata-create.js";
 
 const engine = new QueryEngine();
@@ -299,6 +300,48 @@ async function wikidataPanel(graph) {
   return el;
 }
 
+// ---------- Improve Wikidata (ontology terms) ----------
+async function termFixPanel(graph) {
+  const run = async (file) => (await engine.queryBindings(fillPanel(await loadText("queries/prefixes.rq"), await loadText(file), graph.iri), { sources: [graph.store], unionDefaultGraph: true })).toArray();
+  const fix = await gatherFixes(run, graph.iri, fetch);
+  if (!fix.qid) return null;
+  const proposals = [fix.own, ...fix.additions, ...fix.removals].filter(Boolean);
+  if (!proposals.length && !fix.review.length) return null;
+
+  const wdLink = (qid) => h("a", { href: `https://www.wikidata.org/wiki/${qid}`, target: "_blank", rel: "noopener" }, qid);
+  const codeLink = (x) => h("a", { href: x.url, target: "_blank", rel: "noopener" }, x.code);
+  const chosen = new Set([fix.own, ...fix.additions].filter(Boolean).map(fixKey)); // removals stay opt-in
+  const textarea = h("textarea", { class: "qs", rows: 6, spellcheck: "false", "aria-label": "QuickStatements commands" });
+  const regenerate = () => { textarea.value = buildFixCommands(fix, chosen); };
+  const option = (x, text) => h("li", {}, h("label", {},
+    h("input", { type: "checkbox", checked: chosen.has(fixKey(x)), onchange: (e) => { e.target.checked ? chosen.add(fixKey(x)) : chosen.delete(fixKey(x)); regenerate(); } }),
+    " ", text));
+
+  const body = h("div", { class: "panel-body" },
+    h("p", {}, "Linked Wikidata item: ", wdLink(fix.qid),
+      fix.matchedBy.length ? ` (matched through shared codes: ${fix.matchedBy.join(", ")}; it does not carry this term's own ID).` : "."),
+    proposals.length ? [
+      h("h3", {}, "Proposed edits"),
+      h("ul", { class: "fixes" },
+        fix.own && option(fix.own, [h("b", {}, "Add "), `${fix.own.vocabulary} ID `, codeLink(fix.own), ` (${fix.own.property}).`]),
+        fix.additions.map((a) => option(a, [h("b", {}, "Add "), `${a.vocabulary} `, codeLink(a), ` (${a.property}): ${fix.label} states it as an exact match.`])),
+        fix.removals.map((r) => option(r, [h("b", {}, "Remove "), `${r.vocabulary} `, codeLink(r), ` (${r.property}): obsolete in ${fix.label} (“${r.status.label}”)`, r.status.replacedBy ? `, replaced by ${r.status.replacedBy}` : "", ". Unticked by default; removing a statement can't be undone from here."]))),
+      h("h3", {}, "QuickStatements"),
+      textarea,
+      h("div", { class: "actions" },
+        h("button", { type: "button", class: "primary", onclick: () => window.open(quickStatementsUrl(textarea.value), "_blank", "noopener") }, "Open in QuickStatements"),
+        h("button", { type: "button", onclick: async (e) => { try { await navigator.clipboard.writeText(textarea.value); e.target.textContent = "Copied"; } catch { textarea.select(); } } }, "Copy commands")),
+      h("p", { class: "muted small" }, `Additions cite ${fix.label} (stated in, reference URL, retrieved) and mark codes with mapping relation type “exact match” (P4390). You run the edits in QuickStatements under your own Wikimedia account; review them first.`),
+    ] : h("p", {}, `Wikidata already has this term's ID and every code ${fix.label} states as an exact match.`),
+    fix.review.length ? [
+      h("h3", {}, "Only on Wikidata (review; no edits proposed)"),
+      h("ul", { class: "matches" }, fix.review.map((r) => h("li", {}, `${r.vocabulary} `, codeLink(r), ` · ${r.note}`))),
+    ] : null);
+  regenerate();
+  return h("section", { class: "panel wide wd-create", id: "panel-improve-wikidata" },
+    h("header", {}, h("h2", {}, "Improve Wikidata"), h("span", { class: "timing" }, proposals.length ? `${proposals.length} possible edits` : "In agreement")), body);
+}
+
 // ---------- pages ----------
 let routeId = 0;
 async function entityPage(aspectHint, rawKey) {
@@ -355,6 +398,12 @@ async function entityPage(aspectHint, rawKey) {
   }
   if (aspect === "author" && config.wikidataCreate && config.sources.includes("wikidata"))
     wikidataPanel(graph).then((el) => { if (el && myRoute === routeId) grid.prepend(el); }).catch((err) => console.warn("Add-to-Wikidata panel:", err));
+  if (aspect === "term" && config.wikidataFixes && config.sources.includes("wikidata"))
+    termFixPanel(graph).then((el) => {
+      if (!el || myRoute !== routeId) return;
+      const after = grid.querySelector("#panel-agreement");
+      after ? after.after(el) : grid.prepend(el);
+    }).catch((err) => console.warn("Improve-Wikidata panel:", err));
 }
 
 async function home() {

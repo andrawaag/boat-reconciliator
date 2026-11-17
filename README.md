@@ -28,6 +28,7 @@ Snapshots refresh every Monday. Run the workflow by hand (**Actions → site →
 | `wikidataEndpoint` | Wikidata SPARQL endpoint (default QLever, which holds the full graph) |
 | `liveHarvest` | `false` limits the site to its snapshots: no live API calls from visitors' browsers |
 | `wikidataCreate` | `false` hides the "Not on Wikidata yet" panel on author pages (default `true`) |
+| `wikidataFixes` | `false` hides the "Improve Wikidata" panel on ontology term pages (default `true`) |
 | `seeds` | Entities to pre-build and feature on the home page: `orcid:…`, `doi:…`, `issn:…`, `wikidata:Q…`, `openalex:A…/W…/S…/T…`, `obo:MONDO_0005148` (an OBO term; `MONDO:0005148` works too). An object `{ "key": "…", "aspect": "author" }` forces the page type |
 | `panels` | Per page type (`author`, `work`, `topic`, `venue`, `term`, `common`): `hide` built-in panels by id, `add` your own |
 
@@ -103,6 +104,18 @@ The term page shows:
 - The parents, children and synonyms, plus works about the term on Wikidata (the newest 1,000).
 
 Example: for type 2 diabetes (`MONDO:0005148`), MONDO and Wikidata agree on DOID, ICD-10, ICD-11, MeSH, NCIt and UMLS. But Wikidata's MONDO ID for the item points to an obsolete term, and MONDO's SNOMED CT code is not on Wikidata.
+
+### Improve Wikidata from a term page
+
+When a term is linked to a Wikidata item, an **Improve Wikidata** panel compares the two and proposes QuickStatements edits, each with a checkbox:
+
+- **Add the term's own ID** (e.g. P5270 for MONDO) when the item was only matched through shared codes.
+- **Add codes the ontology states as exact matches** but the item lacks (e.g. SNOMED CT P5806), with qualifier mapping relation type (P4390) = exact match (Q39893449).
+- **Remove an obsolete ID**: when the item holds a different ID of the same ontology and OLS reports that term as obsolete. This one is unticked by default.
+
+Additions are referenced with stated in (S248) the ontology's Wikidata item (MONDO Q27468140, DO Q5282129, HPO Q17027854, GO Q135085), reference URL (S854) to the term's PURL, and retrieved (S813). New IDs use the spelling most common on Wikidata for that property (e.g. `MONDO_0005148`, `GO:0006915`). Codes that only Wikidata has are listed for review, without proposed edits. As on author pages, you run the edits in QuickStatements under your own account.
+
+For type 2 diabetes (`MONDO:0005148`) the panel proposes adding MONDO_0005148 and SNOMED CT 44054006 to Q3025883, and offers to remove MONDO_0015887 ("obsolete rare diabetes mellitus type 2").
 
 Supported terminologies: SNOMED CT, MeSH, ICD-9-CM, ICD-10, ICD-10-CM, ICD-11, UMLS, OMIM, Orphanet, MedGen, and OBO ontologies (MONDO, DOID, HPO, GO, NCIt, UBERON, CL, ChEBI, NCBITaxon, SO, ENVO; other OBO prefixes get PURLs, anything else a [Bioregistry](https://bioregistry.io) IRI). Add one in `VOCABS` in `src/vocab.js`.
 

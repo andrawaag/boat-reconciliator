@@ -12,6 +12,7 @@ export const DEFAULT_CONFIG = {
   wikidataEndpoint: ENDPOINTS.qlever.url,
   liveHarvest: true,
   wikidataCreate: true,
+  wikidataFixes: true,
   seeds: [],
   panels: {},
 };

@@ -129,8 +129,11 @@ function mapCodes(DF, raw, qid, selfObo) {
     else if (WD_PROPS.has(prop)) t = { prefix: WD_PROPS.get(prop), id: o.value };
     if (!t) continue;
     const tgt = target(t.prefix, t.id);
-    if (tgt?.iri === self) out.add(main, NS.schema + "sameAs", self);
-    else addMapping(out, main, t.prefix, t.id, "exact");
+    if (tgt?.iri === self) { out.add(main, NS.schema + "sameAs", self); out.lit(main, NS.kr + "wikidataOwnId", o.value); }
+    else {
+      const at = addMapping(out, main, t.prefix, t.id, "exact");
+      if (at) out.lit(at, NS.kr + "wikidataValue", o.value); // as written on Wikidata, needed to remove a statement
+    }
   }
   return out.quads;
 }
