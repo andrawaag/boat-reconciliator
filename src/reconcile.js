@@ -1,11 +1,12 @@
 // Merges nodes that different sources describe under different IRIs, using schema:sameAs links.
-// Canonical IRI per cluster: ORCID > DOI > Wikidata > ISSN > OpenAlex > anything else. sameAs links are kept for provenance.
+// Canonical IRI per cluster: ORCID > DOI > OBO term > Wikidata > ISSN > OpenAlex > anything else. sameAs links are kept for provenance.
 import { NS } from "./model.js";
 const SAME_AS = NS.schema + "sameAs";
 
 function rank(i) {
   if (i.startsWith("https://orcid.org/")) return 0;
   if (i.startsWith("https://doi.org/")) return 1;
+  if (i.startsWith("http://purl.obolibrary.org/obo/")) return 1.5;
   if (i.startsWith(NS.wd)) return 2;
   if (i.startsWith("urn:issn:")) return 3;
   if (i.startsWith("https://openalex.org/")) return 4;

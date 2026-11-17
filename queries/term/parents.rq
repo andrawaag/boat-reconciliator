@@ -1,0 +1,5 @@
+# Direct is-a parents
+SELECT ?parent (SAMPLE(?n) AS ?parentLabel) (SAMPLE(?c) AS ?code) WHERE {
+  <{{iri}}> rdfs:subClassOf ?parent .
+  OPTIONAL { ?parent schema:name ?n } OPTIONAL { ?parent schema:termCode ?c }
+} GROUP BY ?parent ORDER BY ?parentLabel

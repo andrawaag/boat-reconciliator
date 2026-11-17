@@ -1,5 +1,5 @@
 // The koetai-reconciliator data model: schema.org, with one named graph per source.
-// Identity: people are keyed by ORCID, works by DOI, venues by ISSN, everything else by Wikidata QID.
+// Identity: people are keyed by ORCID, works by DOI, venues by ISSN, ontology terms by OBO PURL, everything else by Wikidata QID.
 // Adapters mint IRIs from whatever identifiers they have and assert schema:sameAs; src/reconcile.js merges them.
 
 export const NS = {
@@ -12,7 +12,7 @@ export const NS = {
   kr: "urn:koetai-reconciliator:vocab:",
 };
 
-export const SOURCES = ["wikidata", "orcid", "crossref", "datacite", "openalex"];
+export const SOURCES = ["wikidata", "orcid", "crossref", "datacite", "openalex", "obo"];
 export const graphFor = (source) => `urn:koetai-reconciliator:source:${source}`;
 
 export const iri = {
@@ -21,7 +21,11 @@ export const iri = {
   doi: (d) => `https://doi.org/${d.trim().toLowerCase()}`,
   issn: (i) => `urn:issn:${i.trim().toUpperCase()}`,
   openalex: (id) => `https://openalex.org/${id.toUpperCase()}`,
+  obo: (id) => `http://purl.obolibrary.org/obo/${id}`,
 };
+// OBO prefixes keep their case convention: upper case, except a few mixed-case ones.
+const OBO_CASE = { ncbitaxon: "NCBITaxon" };
+const oboPrefix = (p) => OBO_CASE[p.toLowerCase()] ?? p.toUpperCase();
 
 const PATTERNS = [
   ["wikidata", /^(?:wikidata:|wd:)?(Q\d+)$/i, (m) => m[1].toUpperCase()],
@@ -29,6 +33,8 @@ const PATTERNS = [
   ["doi", /^(?:doi:|https?:\/\/(?:dx\.)?doi\.org\/)?(10\.\d{4,9}\/\S+)$/i, (m) => m[1].toLowerCase()],
   ["issn", /^(?:issn:|urn:issn:)?(\d{4}-\d{3}[\dX])$/i, (m) => m[1].toUpperCase()],
   ["openalex", /^(?:openalex:|https?:\/\/(?:api\.)?openalex\.org\/(?:\w+\/)?)?([WASTC]\d{3,})$/i, (m) => m[1].toUpperCase()],
+  // OBO term: "obo:MONDO_0005148", "MONDO:0005148" or the PURL.
+  ["obo", /^(?:obo:|https?:\/\/purl\.obolibrary\.org\/obo\/)?([A-Za-z][A-Za-z]{1,15})[_:](\d{4,}|[A-Z]?\d{3,})$/, (m) => `${oboPrefix(m[1])}_${m[2]}`],
 ];
 
 /** Parse user input or a route key ("orcid:0000-…", "10.1145/…", "Q42") into { scheme, value }. */
@@ -51,7 +57,7 @@ export const iriToKey = (i) => (/^(https?:|urn:issn:)/.test(i) ? parseKey(i) : n
 const OPENALEX_ASPECT = { A: "author", W: "work", S: "venue", T: "topic", C: "topic" };
 export function aspectForKey({ scheme, value }) {
   if (scheme === "openalex") return OPENALEX_ASPECT[value[0]];
-  return { orcid: "author", doi: "work", issn: "venue" }[scheme];
+  return { orcid: "author", doi: "work", issn: "venue", obo: "term" }[scheme];
 }
 
 /** Normalise a partial date to an RDF literal: xsd:date, xsd:gYearMonth or xsd:gYear. */

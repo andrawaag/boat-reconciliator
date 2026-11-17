@@ -1,0 +1,13 @@
+# The term as its ontology defines it (OLS), and how it was linked to Wikidata
+SELECT (SAMPLE(?id) AS ?oboId) (SAMPLE(?on) AS ?ontology) (SAMPLE(?ver) AS ?release) (SAMPLE(?def) AS ?definition)
+       (SAMPLE(?obs) AS ?obsolete) (SAMPLE(?rep) AS ?replacedBy) (SAMPLE(?cc) AS ?children)
+       (SAMPLE(?wd) AS ?wikidata) (GROUP_CONCAT(DISTINCT ?mb; separator=", ") AS ?wikidataMatchedBy) WHERE {
+  OPTIONAL { <{{iri}}> schema:termCode ?id }
+  OPTIONAL { <{{iri}}> schema:inDefinedTermSet ?set . ?set schema:name ?on OPTIONAL { ?set schema:version ?ver } }
+  OPTIONAL { GRAPH <urn:koetai-reconciliator:source:obo> { <{{iri}}> schema:description ?def } }
+  OPTIONAL { <{{iri}}> owl:deprecated ?obs }
+  OPTIONAL { <{{iri}}> <http://purl.obolibrary.org/obo/IAO_0100001> ?rep }
+  OPTIONAL { <{{iri}}> kr:childCount ?cc }
+  OPTIONAL { <{{iri}}> schema:sameAs ?wd FILTER(STRSTARTS(STR(?wd), "http://www.wikidata.org/entity/Q")) }
+  OPTIONAL { <{{iri}}> kr:wikidataMatchedBy ?mb }
+}

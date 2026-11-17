@@ -1,0 +1,7 @@
+# Like works.rq, but only the 1,000 most recently published works (for terms with very large literatures).
+CONSTRUCT { ?work wdt:{{link}} wd:{{q}} ; rdfs:label ?l ; wdt:P1476 ?t ; wdt:P577 ?d ; wdt:P356 ?doi ; wdt:P1433 ?v ; wdt:P921 ?topic . }
+WHERE {
+  { SELECT DISTINCT ?work WHERE { ?work wdt:{{link}} wd:{{q}} ; wdt:P577 ?pd } ORDER BY DESC(?pd) LIMIT 1000 }
+  { ?work rdfs:label ?l FILTER(LANG(?l) = "en") } UNION { ?work wdt:P1476 ?t } UNION { ?work wdt:P577 ?d } UNION { ?work wdt:P356 ?doi }
+  UNION { ?work wdt:P1433 ?v } UNION { ?work wdt:P921 ?topic }
+}

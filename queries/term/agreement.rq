@@ -1,0 +1,13 @@
+# Per terminology: codes both the ontology and Wikidata give, and codes only one of them gives
+SELECT ?vocabulary (SUM(?b) AS ?both) (SUM(?o) AS ?oboOnly) (SUM(?w) AS ?wikidataOnly) WHERE {
+  {
+    SELECT ?target (MAX(IF(?src = "obo", 1, 0)) AS ?inObo) (MAX(IF(?src = "wikidata", 1, 0)) AS ?inWikidata) WHERE {
+      { GRAPH ?g { <{{iri}}> skos:exactMatch ?target } } UNION { GRAPH ?g { <{{iri}}> oboInOwl:hasDbXref ?target } }
+      BIND(STRAFTER(STR(?g), "urn:koetai-reconciliator:source:") AS ?src)
+    } GROUP BY ?target
+  }
+  { SELECT DISTINCT ?target ?vocabulary WHERE { ?target kr:vocabulary ?vocabulary } }
+  BIND(IF(?inObo = 1 && ?inWikidata = 1, 1, 0) AS ?b)
+  BIND(IF(?inObo = 1 && ?inWikidata = 0, 1, 0) AS ?o)
+  BIND(IF(?inObo = 0 && ?inWikidata = 1, 1, 0) AS ?w)
+} GROUP BY ?vocabulary ORDER BY ?vocabulary

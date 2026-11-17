@@ -1,0 +1,11 @@
+# Codes in other terminologies, from every source. A row with several source badges means the sources agree.
+# "exact": stated as the same concept (an ontology's exact match, or a Wikidata external ID); "xref": a database cross-reference.
+SELECT (SAMPLE(?voc) AS ?vocabulary) ?code (SAMPLE(?c) AS ?codeLabel)
+       (GROUP_CONCAT(DISTINCT ?rel; separator=", ") AS ?relation) (GROUP_CONCAT(DISTINCT ?src; separator=" ") AS ?sources) WHERE {
+  { GRAPH ?g { <{{iri}}> skos:exactMatch ?code } BIND("exact" AS ?rel) }
+  UNION
+  { GRAPH ?g { <{{iri}}> oboInOwl:hasDbXref ?code } BIND("xref" AS ?rel) }
+  OPTIONAL { ?code kr:vocabulary ?voc }
+  OPTIONAL { ?code kr:code ?c }
+  BIND(STRAFTER(STR(?g), "urn:koetai-reconciliator:source:") AS ?src)
+} GROUP BY ?code ORDER BY ?vocabulary ?codeLabel

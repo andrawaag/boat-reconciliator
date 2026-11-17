@@ -1,0 +1,7 @@
+# Synonyms with their OBO scope
+SELECT ?synonym ?scope WHERE {
+  { <{{iri}}> oboInOwl:hasExactSynonym ?synonym BIND("exact" AS ?scope) }
+  UNION { <{{iri}}> oboInOwl:hasRelatedSynonym ?synonym BIND("related" AS ?scope) }
+  UNION { <{{iri}}> oboInOwl:hasBroadSynonym ?synonym BIND("broad" AS ?scope) }
+  UNION { <{{iri}}> oboInOwl:hasNarrowSynonym ?synonym BIND("narrow" AS ?scope) }
+} ORDER BY ?scope LCASE(?synonym)

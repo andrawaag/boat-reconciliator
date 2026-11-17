@@ -4,6 +4,7 @@ import { ASPECTS, ENDPOINTS, fillPanel } from "./aspects.js";
 import { normalizeConfig, panelsFor } from "./config.js";
 import { parseKey, keyString, iriToKey } from "./model.js";
 import { harvest } from "./harvest.js";
+import { searchObo } from "./adapters/obo.js";
 import { gatherCandidate, findExisting, searchByName, buildCommands, quickStatementsUrl, propertyLabel, propertyUrl } from "./wikidata-create.js";
 
 const engine = new QueryEngine();
@@ -80,7 +81,7 @@ const h = (tag, attrs = {}, ...kids) => {
   return el;
 };
 
-const COLUMN_ASPECT = { work: "work", cited: "work", citing: "work", author: "author", coauthor: "author", venue: "venue", topic: "topic" };
+const COLUMN_ASPECT = { work: "work", cited: "work", citing: "work", author: "author", coauthor: "author", venue: "venue", topic: "topic", parent: "term", child: "term", replacedBy: "term", code: "term" };
 const HIDDEN = new Set(["position"]);
 
 function externalUrl(key) {
@@ -90,6 +91,7 @@ function externalUrl(key) {
     wikidata: `https://www.wikidata.org/wiki/${key.value}`,
     issn: `https://portal.issn.org/resource/ISSN/${key.value}`,
     openalex: `https://openalex.org/${key.value}`,
+    obo: `http://purl.obolibrary.org/obo/${key.value}`,
   }[key.scheme];
 }
 
@@ -97,7 +99,8 @@ function entityLink(iri, label, column) {
   const key = iriToKey(iri);
   const aspect = COLUMN_ASPECT[column];
   const text = label || (key ? `${key.scheme}:${key.value}` : "(unnamed)");
-  if (!key) return h("span", { class: "unlinked", title: iri }, text);
+  // Codes in other terminologies (SNOMED CT, MeSH, ICD, …) have no page here: link to the terminology itself.
+  if (!key) return /^https?:\/\//.test(iri) ? h("a", { href: iri, target: "_blank", rel: "noopener", class: "external", title: iri }, label || iri) : h("span", { class: "unlinked", title: iri }, text);
   return h("a", { href: `#/${aspect ? aspect + "/" : ""}${keyString(key)}` }, text);
 }
 
@@ -362,7 +365,7 @@ async function home() {
   main.replaceChildren(h("section", { class: "home" },
     h("h1", {}, config.tagline),
     config.intro && h("p", { class: "lede" }, config.intro),
-    h("p", {}, config.liveHarvest ? "Search above, or paste an ORCID, DOI, ISSN, Wikidata QID or OpenAlex id." : "This site shows the pre-built pages below."),
+    h("p", {}, config.liveHarvest ? "Search above, or paste an ORCID, DOI, ISSN, Wikidata QID, OpenAlex id or ontology term ID (e.g. MONDO:0005148)." : "This site shows the pre-built pages below."),
     h("h2", {}, "Featured"),
     Object.keys(byAspect).length ? h("div", { class: "snapshots" }, Object.entries(byAspect).map(([a, list]) => h("div", {},
       h("h3", {}, ASPECTS[a]?.title ?? a),
@@ -399,11 +402,19 @@ input.addEventListener("input", () => {
   const term = input.value.trim();
   if (term.length < 3 || parseKey(term)) { suggest.hidden = true; return; }
   timer = setTimeout(async () => {
-    // Name search uses Wikidata's search API. ORCID and Crossref search could be added here as well.
+    // Name search: Wikidata's search API, plus ontology terms from OLS when the OBO source is on.
     const url = `https://www.wikidata.org/w/api.php?action=wbsearchentities&format=json&origin=*&language=en&uselang=en&limit=8&search=${encodeURIComponent(term)}`;
-    const res = await fetch(url).then((r) => r.json()).catch(() => null);
-    const hits = res?.search ?? [];
-    suggest.replaceChildren(...hits.map((s) => h("li", {}, h("a", { href: `#/wikidata:${s.id}`, onclick: () => { suggest.hidden = true; input.value = ""; } }, h("b", {}, s.label ?? s.id), s.description ? ` · ${s.description}` : ""))));
+    const [res, terms] = await Promise.all([
+      fetch(url).then((r) => r.json()).catch(() => null),
+      config.sources.includes("obo") ? searchObo(fetch, term, 5).catch(() => []) : [],
+    ]);
+    if (input.value.trim() !== term) return;
+    const pick = () => { suggest.hidden = true; input.value = ""; };
+    const hits = [
+      ...(res?.search ?? []).map((s) => h("li", {}, h("a", { href: `#/wikidata:${s.id}`, onclick: pick }, h("b", {}, s.label ?? s.id), s.description ? ` · ${s.description}` : ""))),
+      ...terms.map((t) => h("li", { class: "obo-hit" }, h("a", { href: `#/term/obo:${t.id}`, onclick: pick }, h("b", {}, t.label), ` · ${t.oboId} `, h("span", { class: "badge src-obo" }, t.ontology)))),
+    ];
+    suggest.replaceChildren(...hits);
     suggest.hidden = !hits.length;
   }, 250);
 });

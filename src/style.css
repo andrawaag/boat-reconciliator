@@ -14,6 +14,7 @@
   --crossref: #b5562c;
   --datacite: #1f7a8c;
   --openalex: #a8326e;
+  --obo: #6b5a1e;
   --snapshot: #6c5aa8;
   --reconcile: #707070;
   --radius: 10px;
@@ -37,6 +38,7 @@
     --crossref: #eb9a73;
     --datacite: #6cc5d6;
     --openalex: #ef8fbd;
+    --obo: #d9c27a;
     --snapshot: #b4a6e8;
     --reconcile: #a8a8a8;
     color-scheme: dark;
@@ -99,6 +101,7 @@ h2 { font-size: 15px; margin: 0; }
 .src-crossref { background: var(--crossref); }
 .src-datacite { background: var(--datacite); }
 .src-openalex { background: var(--openalex); }
+.src-obo { background: var(--obo); }
 .src-snapshot { background: var(--snapshot); }
 .src-reconcile { background: var(--reconcile); }
 @media (prefers-color-scheme: dark) { .badge { color: #111; } }

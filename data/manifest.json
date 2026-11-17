@@ -167,6 +167,36 @@
           "ms": 4334
         }
       ]
+    },
+    "obo:MONDO_0005148": {
+      "name": "type 2 diabetes mellitus",
+      "aspect": "term",
+      "iri": "http://purl.obolibrary.org/obo/MONDO_0005148",
+      "file": "data/term/obo_MONDO_0005148.nq.gz",
+      "quads": 15204,
+      "bytes": 219755,
+      "generated": "2026-11-17T15:17:35.359Z",
+      "endpoint": "https://qlever.dev/api/wikidata",
+      "log": [
+        {
+          "source": "obo",
+          "what": "term, hierarchy and cross-references (OLS)",
+          "quads": 135,
+          "ms": 333
+        },
+        {
+          "source": "reconcile",
+          "what": "Wikidata Q3025883 matched by DOID:9352, ICD10CM:E11, ICD10WHO:E11, ICD11:119724091, MESH:D003924, NCIT:C26747, OMIM:125853, UMLS:C0011860",
+          "quads": 9,
+          "ms": 0
+        },
+        {
+          "source": "wikidata",
+          "what": "term neighbourhood",
+          "quads": 20992,
+          "ms": 1669
+        }
+      ]
     }
   },
   "aliases": {
@@ -177,7 +207,10 @@
     "openalex:A5018023802": "wikidata:Q18618629",
     "openalex:A5050528093": "orcid:0000-0001-9488-1870",
     "openalex:W2080133951": "doi:10.1145/2629489",
-    "openalex:S2607323502": "issn:2052-4463"
+    "openalex:S2607323502": "issn:2052-4463",
+    "wikidata:Q3025883": "obo:MONDO_0005148",
+    "openalex:C2777180221": "obo:MONDO_0005148",
+    "openalex:C2910068830": "obo:MONDO_0005148"
   },
-  "generated": "2026-11-17T15:01:22.578Z"
+  "generated": "2026-11-17T15:17:35.361Z"
 }

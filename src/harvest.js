@@ -2,8 +2,10 @@
 // Runs unchanged in the browser (live mode) and in Node (the snapshot GitHub Action).
 // ctx = { engine (Comunica), DF (RDF/JS DataFactory), fetch, loadText(path), endpoint, headers,
 //         sources? (names to use; default all), openalexKey? (Node only) }
-import { NS, iri, keyToIri, keyString, aspectForKey, SOURCES } from "./model.js";
-import { lookupQid, detectAspect, harvestWikidata } from "./adapters/wikidata.js";
+import { NS, iri, keyToIri, keyString, aspectForKey, graphFor, SOURCES } from "./model.js";
+import { parseTargetIri, SKOS } from "./vocab.js";
+import { lookupQid, lookupOboQid, matchQidByCodes, detectAspect, harvestWikidata } from "./adapters/wikidata.js";
+import { harvestObo } from "./adapters/obo.js";
 import { harvestOrcid } from "./adapters/orcid.js";
 import { harvestCrossref } from "./adapters/crossref.js";
 import { harvestDatacite } from "./adapters/datacite.js";
@@ -22,7 +24,7 @@ export async function harvest(ctx, key, aspectHint, onProgress = () => {}) {
     try {
       const got = await fn();
       const list = Array.isArray(got) ? got : got?.quads ?? [];
-      quads.push(...list);
+      for (const q of list) quads.push(q); // not push(...list): large lists overflow the call stack
       log.push({ source, what, quads: list.length, ms: Date.now() - t0 });
       onProgress({ source, what, state: "done", quads: list.length });
       return got;
@@ -42,12 +44,32 @@ export async function harvest(ctx, key, aspectHint, onProgress = () => {}) {
       ids.wikidata = await lookupQid(ctx, scheme, ids[scheme]).catch(() => null);
       if (ids.wikidata) break;
     }
+    if (!ids.wikidata && ids.obo) ids.wikidata = await lookupOboQid(ctx, ids.obo).catch(() => null);
   }
   const aspect = aspectHint || aspectForKey(key)
     || (ids.wikidata && on("wikidata") ? await detectAspect(ctx, ids.wikidata).catch(() => "topic") : "topic");
 
+  // 1b. Ontology terms: fetch the term first. If its own ID is not on Wikidata, match an item through the term's
+  // exact cross-references (DOID, MeSH, SNOMED CT, …) and record how, so the page can show the match and any mismatch.
+  if (aspect === "term" && ids.obo && on("obo")) {
+    const before = quads.length;
+    await step("obo", "term, hierarchy and cross-references (OLS)", () => harvestObo(ctx, ids.obo));
+    if (!ids.wikidata && on("wikidata")) {
+      const codes = exactCodes(quads.slice(before), iri.obo(ids.obo));
+      const match = await matchQidByCodes(ctx, codes).catch(() => null);
+      if (match) {
+        ids.wikidata = match.qid;
+        const g = ctx.DF.namedNode(graphFor("reconcile"));
+        const me = ctx.DF.namedNode(iri.obo(ids.obo)), wd = ctx.DF.namedNode(iri.wikidata(match.qid));
+        quads.push(ctx.DF.quad(me, ctx.DF.namedNode(NS.schema + "sameAs"), wd, g));
+        for (const m of match.matched) quads.push(ctx.DF.quad(me, ctx.DF.namedNode(NS.kr + "wikidataMatchedBy"), ctx.DF.literal(m), g));
+        log.push({ source: "reconcile", what: `Wikidata ${match.qid} matched by ${match.matched.join(", ")}`, quads: 1 + match.matched.length, ms: 0 });
+      }
+    }
+  }
+
   // 2. Wikidata, the hub for topics and for further identifiers.
-  if (ids.wikidata && on("wikidata")) await step("wikidata", `${aspect} neighbourhood`, () => harvestWikidata(ctx, ids.wikidata, aspect));
+  if (ids.wikidata && on("wikidata")) await step("wikidata", `${aspect} neighbourhood`, () => harvestWikidata(ctx, ids.wikidata, aspect, { obo: ids.obo }));
   const me = iri.wikidata(ids.wikidata ?? "");
   for (const q of quads) {
     if (q.subject.value !== me || q.predicate.value !== NS.schema + "sameAs") continue;
@@ -90,4 +112,15 @@ export async function harvest(ctx, key, aspectHint, onProgress = () => {}) {
   // 5. Merge.
   const merged = reconcile(ctx.DF, quads);
   return { key: keyString(key), aspect, iri: merged.canonical(keyToIri(key)), ids, quads: merged.quads, log };
+}
+
+// Exact-match codes of the term, as { prefix, id }, from the ontology's own quads.
+function exactCodes(quads, termIri) {
+  const out = [];
+  for (const q of quads) {
+    if (q.subject.value !== termIri || q.predicate.value !== SKOS + "exactMatch") continue;
+    const t = parseTargetIri(q.object.value);
+    if (t) out.push(t);
+  }
+  return out;
 }

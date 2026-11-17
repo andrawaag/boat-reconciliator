@@ -1,0 +1,5 @@
+# Direct is-a children
+SELECT ?child (SAMPLE(?n) AS ?childLabel) (SAMPLE(?c) AS ?code) WHERE {
+  ?child rdfs:subClassOf <{{iri}}> .
+  OPTIONAL { ?child schema:name ?n } OPTIONAL { ?child schema:termCode ?c }
+} GROUP BY ?child ORDER BY ?childLabel LIMIT 1000

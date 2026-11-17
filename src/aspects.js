@@ -29,6 +29,19 @@ export const ASPECTS = {
       { id: "authors", title: "Most prolific authors", render: "table" },
     ],
   },
+  term: {
+    title: "Ontology term",
+    panels: [
+      { id: "details", title: "Definition", render: "kv" },
+      { id: "agreement", title: "Agreement between sources", render: "table" },
+      { id: "mappings", title: "Mappings to other terminologies", render: "table", wide: true },
+      { id: "parents", title: "Parents (is a)", render: "table" },
+      { id: "children", title: "Children", render: "table" },
+      { id: "synonyms", title: "Synonyms", render: "table" },
+      { id: "per-year", title: "Works about this term per year (Wikidata)", render: "bars" },
+      { id: "works", title: "Works about this term (Wikidata)", render: "table" },
+    ],
+  },
   venue: {
     title: "Venue",
     panels: [

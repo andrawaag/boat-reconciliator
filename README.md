@@ -2,9 +2,9 @@
 
 **koetai reconciliator** reconciles entities across linked-data sources into one RDF graph per entity, and publishes the result as a static site with no server. It's a GitHub template, so anyone can run their own instance.
 
-It starts with scholarly entities. Each page (a researcher, a work, a topic or a venue) is one RDF graph, merged in your visitors' browsers from **Wikidata, ORCID, Crossref, DataCite and OpenAlex** and queried with [Comunica](https://comunica.dev). GitHub Pages hosts the site, and a GitHub Action keeps pre-built snapshots of the pages you feature. You add your own visualizations as a SPARQL query plus a few lines of config.
+It covers scholarly entities and ontology terms. Each page (a researcher, a work, a topic or a venue) is one RDF graph, merged in your visitors' browsers from **Wikidata, ORCID, Crossref, DataCite, OpenAlex and OBO ontologies (via OLS)** and queried with [Comunica](https://comunica.dev). GitHub Pages hosts the site, and a GitHub Action keeps pre-built snapshots of the pages you feature. You add your own visualizations as a SPARQL query plus a few lines of config.
 
-Inspired by [Scholia](https://github.com/WDscholia/scholia). The aim is to go native on RDF and go beyond Wikidata: the same adapter → reconcile → query pipeline is meant to extend to other domains and terminologies, such as SNOMED CT, OBO Foundry ontologies and ICD, which are not connected yet. (Developed under the working names frugalScholia and koetai-bibliography.)
+Inspired by [Scholia](https://github.com/WDscholia/scholia). The aim is to go native on RDF and go beyond Wikidata: the same adapter → reconcile → query pipeline is meant to extend to other domains and terminologies, OBO Foundry ontologies are the first: an ontology term's page reconciles its cross-references to SNOMED CT, MeSH, ICD-9/10/11, UMLS and others against Wikidata. (Developed under the working names frugalScholia and koetai-bibliography.)
 
 ---
 
@@ -24,12 +24,12 @@ Snapshots refresh every Monday. Run the workflow by hand (**Actions → site →
 |---|---|
 | `title`, `tagline`, `intro` | Site name, home page heading and intro text |
 | `accent` | Accent colour (any CSS colour); the dark theme derives from it |
-| `sources` | Which of `wikidata`, `orcid`, `crossref`, `datacite`, `openalex` to use |
+| `sources` | Which of `wikidata`, `orcid`, `crossref`, `datacite`, `openalex`, `obo` to use |
 | `wikidataEndpoint` | Wikidata SPARQL endpoint (default QLever, which holds the full graph) |
 | `liveHarvest` | `false` limits the site to its snapshots: no live API calls from visitors' browsers |
 | `wikidataCreate` | `false` hides the "Not on Wikidata yet" panel on author pages (default `true`) |
-| `seeds` | Entities to pre-build and feature on the home page: `orcid:…`, `doi:…`, `issn:…`, `wikidata:Q…`, `openalex:A…/W…/S…/T…`. An object `{ "key": "…", "aspect": "author" }` forces the page type |
-| `panels` | Per page type (`author`, `work`, `topic`, `venue`, `common`): `hide` built-in panels by id, `add` your own |
+| `seeds` | Entities to pre-build and feature on the home page: `orcid:…`, `doi:…`, `issn:…`, `wikidata:Q…`, `openalex:A…/W…/S…/T…`, `obo:MONDO_0005148` (an OBO term; `MONDO:0005148` works too). An object `{ "key": "…", "aspect": "author" }` forces the page type |
+| `panels` | Per page type (`author`, `work`, `topic`, `venue`, `term`, `common`): `hide` built-in panels by id, `add` your own |
 
 ## Add your own visualizations
 
@@ -89,21 +89,40 @@ When an author page's graph has no Wikidata item for the person, the page shows 
 
 **Open in QuickStatements** opens the commands there, and you run them under your own Wikimedia account; the site never writes to Wikidata itself. Review the commands before you run them.
 
+## Ontology terms and terminology mappings
+
+Any OBO Foundry term has a page: search by name (results come from Wikidata and from [OLS](https://www.ebi.ac.uk/ols4/)), or paste an ID such as `MONDO:0005148`, `DOID:9352`, `GO:0006915` or `HP:0005978`.
+
+1. **The ontology.** The `obo` adapter (`src/adapters/obo.js`) reads the term from EBI's Ontology Lookup Service: label, definition, synonyms with their OBO scope, obsolete status, is-a parents and children, and the term's cross-references.
+2. **Wikidata.** The item is found through the ontology's own Wikidata property (P5270 MONDO, P699 DOID, P686 GO, P3841 HPO, …) or P2888 exact match. If none carries the term's ID, the item that shares the most of the term's exact cross-references is used, and the page shows which codes matched.
+3. **Mappings.** Codes from both sources are turned into the same IRIs (`src/vocab.js`), for example `http://snomed.info/id/44054006` or `http://id.nlm.nih.gov/mesh/D003924`. Where two sources give the same code, they meet on one node.
+
+The term page shows:
+- **Agreement between sources:** per terminology, how many codes both sources give, and how many only one does.
+- **Mappings to other terminologies:** each code with its relation (`exact` for an exact match or Wikidata external ID, `xref` for a plain database cross-reference) and source badges.
+- The parents, children and synonyms, plus works about the term on Wikidata (the newest 1,000).
+
+Example: for type 2 diabetes (`MONDO:0005148`), MONDO and Wikidata agree on DOID, ICD-10, ICD-11, MeSH, NCIt and UMLS. But Wikidata's MONDO ID for the item points to an obsolete term, and MONDO's SNOMED CT code is not on Wikidata.
+
+Supported terminologies: SNOMED CT, MeSH, ICD-9-CM, ICD-10, ICD-10-CM, ICD-11, UMLS, OMIM, Orphanet, MedGen, and OBO ontologies (MONDO, DOID, HPO, GO, NCIt, UBERON, CL, ChEBI, NCBITaxon, SO, ENVO; other OBO prefixes get PURLs, anything else a [Bioregistry](https://bioregistry.io) IRI). Add one in `VOCABS` in `src/vocab.js`.
+
 ## How it works
 
 ```
                       adapters (src/adapters/*.js), each → schema.org, one named graph per source
 Wikidata  ── SPARQL CONSTRUCT via Comunica (QLever)  ┐
 ORCID     ── public API v3                           │
-Crossref  ── REST API                                ├─► reconcile (src/reconcile.js): merge nodes that share
-DataCite  ── REST API (Zenodo, figshare, arXiv, …)   │   an ORCID / DOI / QID / ISSN / OpenAlex id
-OpenAlex  ── REST API (authors, venues, topics,      ┘                 │
-              citing works)                              one merged N-Quads graph per entity
-                                                      │                                  │
-                                GitHub Action → data/**/*.nq.gz            browser → harvested live
-                                                      └──────────────┬───────────────────┘
-                                                                     ▼
-                                     Comunica runs each panel's SPARQL over the graph → tables and charts
+Crossref  ── REST API                                │
+DataCite  ── REST API (Zenodo, figshare, arXiv, …)   ├─► reconcile (src/reconcile.js): merge nodes that share an
+OpenAlex  ── REST API (authors, venues, topics,      │   ORCID / DOI / OBO term / QID / ISSN / OpenAlex id;
+              citing works)                          │   codes in other terminologies stay mappings (src/vocab.js)
+OBO       ── OLS4 API (terms, hierarchy, xrefs)      ┘                         │
+                                                              one merged N-Quads graph per entity
+                                                       ┌───────────────────────┴───────────────────┐
+                                        GitHub Action → data/**/*.nq.gz              browser → harvested live
+                                                       └───────────────────────┬───────────────────┘
+                                                                               ▼
+                                          Comunica runs each panel's SPARQL over the graph → tables and charts
 ```
 
 The same harvesting code (`src/harvest.js`) runs in Node for snapshots and in the browser for live pages.
@@ -118,10 +137,12 @@ Everything is mapped to [schema.org](https://schema.org). Each source writes to 
 | Person | `schema:Person`, `schema:name`, `schema:description` |
 | Venue | `schema:Periodical`, `schema:name`, `schema:issn` |
 | Topic | Wikidata items and OpenAlex topics (`schema:DefinedTerm`), `schema:name` |
-| Identity | `schema:sameAs` to `https://orcid.org/…`, `https://doi.org/…`, `http://www.wikidata.org/entity/Q…`, `urn:issn:…`, `https://openalex.org/…` |
+| Ontology term | `schema:DefinedTerm`, `schema:termCode`, `schema:inDefinedTermSet`, `rdfs:subClassOf`, `oboInOwl:has…Synonym`, `owl:deprecated` |
+| Mapping | `skos:exactMatch` or `oboInOwl:hasDbXref` to a code node with `kr:vocabulary` and `kr:code` |
+| Identity | `schema:sameAs` to `https://orcid.org/…`, `https://doi.org/…`, `http://www.wikidata.org/entity/Q…`, `urn:issn:…`, `https://openalex.org/…`, `http://purl.obolibrary.org/obo/…` |
 | Extras | `kr:citedByCount`, `kr:authorship` → `kr:agent` + `kr:position` (author order), where `kr:` = `urn:koetai-reconciliator:vocab:` |
 
-**Reconciliation.** Nodes linked by `schema:sameAs` are merged under one canonical IRI: ORCID > DOI > Wikidata > ISSN > OpenAlex. Within a single work, authors from different sources are also joined by name: an exact full-name match between identified authors, or a family name plus first initial for authors who only have a per-work ID. Matching never crosses works, so namesakes on different papers stay separate.
+**Reconciliation.** Nodes linked by `schema:sameAs` are merged under one canonical IRI: ORCID > DOI > OBO term > Wikidata > ISSN > OpenAlex. Mappings (`skos:exactMatch`, cross-references) are never merged, so one concept's codes in other terminologies stay visible as separate rows. Within a single work, authors from different sources are also joined by name: an exact full-name match between identified authors, or a family name plus first initial for authors who only have a per-work ID. Matching never crosses works, so namesakes on different papers stay separate.
 
 ### Snapshots and live pages
 
@@ -150,6 +171,7 @@ Write `src/adapters/<name>.js` returning quads in graph `urn:koetai-reconciliato
 - **Live pages:** a live page appears once its slowest source answers. Crossref sometimes takes 10–15 seconds.
 - **OpenAlex quota:** anonymous use is metered at about 1,000 requests per day per IP. That's ample for visitors; snapshot runs should use `OPENALEX_API_KEY`.
 - **Wikidata author order:** Wikidata's author ordinals (`P1545`) are not mapped yet. Author order comes from Crossref, DataCite and OpenAlex.
+- **Terminology pages:** only OBO terms have their own pages. SNOMED CT, MeSH and ICD codes are shown as mappings and link out. OLS also hosts SNOMED CT and MeSH, so they could become sources next. Term pages show only the newest 1,000 works about the term from Wikidata.
 - **Language and search:** labels are English only, and name search uses Wikidata's search API.
 - **Large pages:** a journal page (about 120k quads) takes several seconds to query in the browser.
 - **Tests:** there are no automated tests yet. Behaviour was checked by hand with `npm run check` and in a browser.
@@ -162,7 +184,7 @@ This project was developed with substantial help from generative AI, as recommen
 - **What the AI did:**
   - proposed the architecture: source adapters → schema.org named graphs → reconciliation → Comunica over static or live graphs, packaged as a configurable template;
   - wrote the code, SPARQL queries, GitHub workflow and this README;
-  - probed the Wikidata, QLever, ORCID, Crossref, DataCite and OpenAlex APIs to confirm formats, CORS and rate limits;
+  - probed the Wikidata, QLever, ORCID, Crossref, DataCite, OpenAlex and OLS APIs to confirm formats, CORS and rate limits;
   - ran the manual tests described above.
 - **What the human did:** set the goals (a frugal Scholia that lives on GitHub, uses Comunica, is native RDF across Wikidata, ORCID, Crossref and further sources, and can be reused as a template), steered the design, and is responsible for reviewing, maintaining and publishing the code.
 - **Verification:** the AI-generated code was tested by hand against live data. It has no automated test suite and has not had an independent line-by-line review, so treat it as a prototype.
@@ -172,4 +194,4 @@ If you build an instance from this template, keep this section and add your own 
 
 ## License
 
-MIT, see [LICENSE](LICENSE). Data shown by an instance keeps its source licences: Wikidata, ORCID public data and OpenAlex are CC0; Crossref and DataCite metadata are generally CC0 or open.
+MIT, see [LICENSE](LICENSE). Data shown by an instance keeps its source licences: Wikidata, ORCID public data and OpenAlex are CC0; Crossref and DataCite metadata are generally CC0 or open. OBO ontologies are mostly CC BY 4.0 or CC0 (check each ontology). SNOMED CT, ICD and UMLS codes appear only as identifiers taken from OBO cross-references and Wikidata; their content is licensed separately.
