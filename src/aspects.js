@@ -27,6 +27,7 @@ export const ASPECTS = {
       { id: "per-year", title: "Works per year", render: "bars" },
       { id: "works", title: "Works", render: "table" },
       { id: "authors", title: "Most prolific authors", render: "table" },
+      { id: "mappings", title: "Codes in terminologies (checked in OLS)", render: "table", wide: true, hideEmpty: true },
     ],
   },
   term: {
@@ -34,7 +35,7 @@ export const ASPECTS = {
     panels: [
       { id: "details", title: "Definition", render: "kv" },
       { id: "agreement", title: "Agreement between sources", render: "table" },
-      { id: "mappings", title: "Mappings to other terminologies", render: "table", wide: true },
+      { id: "mappings", title: "Mappings to other terminologies (checked in OLS)", render: "table", wide: true },
       { id: "parents", title: "Parents (is a)", render: "table" },
       { id: "children", title: "Children", render: "table" },
       { id: "synonyms", title: "Synonyms", render: "table" },

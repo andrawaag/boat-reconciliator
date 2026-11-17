@@ -3,9 +3,10 @@
 // ctx = { engine (Comunica), DF (RDF/JS DataFactory), fetch, loadText(path), endpoint, headers,
 //         sources? (names to use; default all), openalexKey? (Node only) }
 import { NS, iri, keyToIri, keyString, aspectForKey, graphFor, SOURCES } from "./model.js";
-import { parseTargetIri, SKOS } from "./vocab.js";
+import { parseTargetIri, SKOS, OBOINOWL } from "./vocab.js";
 import { lookupQid, lookupOboQid, matchQidByCodes, detectAspect, harvestWikidata } from "./adapters/wikidata.js";
 import { harvestObo } from "./adapters/obo.js";
+import { checkConceptsOls } from "./adapters/ols.js";
 import { findByStatementsLive } from "./wikidata-live.js";
 import { wikidataFormsForObo } from "./vocab.js";
 import { harvestOrcid } from "./adapters/orcid.js";
@@ -97,6 +98,13 @@ export async function harvest(ctx, key, aspectHint, onProgress = () => {}) {
     if (v.startsWith("https://openalex.org/")) fill({ openalex: v.slice(21) });
   }
   if (ids.openalex && ids.openalex[0] !== { author: "A", work: "W", venue: "S", topic: "T" }[aspect] && !(aspect === "topic" && ids.openalex[0] === "C")) delete ids.openalex;
+
+  // 2b. Check every code the page maps to in EBI's OLS: does it exist, and is it obsolete?
+  if ((aspect === "term" || aspect === "topic") && on("ols")) {
+    const own = ids.obo ? iri.obo(ids.obo) : null;
+    const codes = quads.filter((q) => (q.predicate.value === SKOS + "exactMatch" || q.predicate.value === OBOINOWL + "hasDbXref") && q.object.value !== own).map((q) => q.object.value);
+    if (codes.length) await step("ols", "codes checked in OLS", () => checkConceptsOls(ctx, codes));
+  }
 
   // 3. Source-specific enrichment; independent hosts, so in parallel.
   const jobs = [];

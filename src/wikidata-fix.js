@@ -10,18 +10,20 @@ import { oboTermStatus } from "./adapters/obo.js";
 const EXACT_MATCH = "Q39893449"; // value for P4390 "mapping relation type"
 const clean = (s) => String(s).replace(/["\t\n\r|]/g, " ").trim();
 
-export async function gatherFixes(run, termIri, fetchFn) {
-  const oboId = termIri.replace("http://purl.obolibrary.org/obo/", "");
-  const [prefix, local] = oboId.split("_");
-  const ownCanon = canonicalPrefix(prefix);
+export async function gatherFixes(run, pageIri, fetchFn) {
+  // Term pages (an OBO PURL) get all three kinds of edit; topic pages (a Wikidata item) only the removal of obsolete codes.
+  const isTerm = pageIri.startsWith("http://purl.obolibrary.org/obo/");
+  const oboId = isTerm ? pageIri.replace("http://purl.obolibrary.org/obo/", "") : null;
+  const [prefix, local] = oboId ? oboId.split("_") : [null, null];
+  const ownCanon = prefix ? canonicalPrefix(prefix) : null;
   const own = ownCanon ? VOCABS[ownCanon] : null;
   const [fixRows, mapRows] = await Promise.all([run("queries/term/wikidata-fix.rq"), run("queries/term/mappings.rq")]);
 
-  let qid = null, ownOnWikidata = false;
+  let qid = isTerm ? null : pageIri.match(/\/(Q\d+)$/)?.[1] ?? null, ownOnWikidata = false;
   const matchedBy = [], wdValues = new Map();
   for (const b of fixRows) {
     const kind = b.get("kind").value;
-    if (kind === "item") qid = b.get("item").value.split("/").pop();
+    if (kind === "item" && isTerm) qid = b.get("item").value.split("/").pop();
     else if (kind === "own") ownOnWikidata = true;
     else if (kind === "matchedBy") matchedBy.push(b.get("value").value);
     else if (kind === "value") {
@@ -29,12 +31,12 @@ export async function gatherFixes(run, termIri, fetchFn) {
       if (!/^https?:/.test(v)) (wdValues.get(code) ?? wdValues.set(code, []).get(code)).push(v);
     }
   }
-  const result = { qid, oboId, label: own?.label ?? prefix, matchedBy, own: null, additions: [], removals: [], review: [] };
+  const result = { qid, oboId, isTerm, label: own?.label ?? prefix, matchedBy, own: null, additions: [], removals: [], review: [] };
   if (!qid) return result;
 
-  const reference = { item: own?.wdItem ?? null, url: termIri };
+  const reference = { item: own?.wdItem ?? null, url: pageIri };
   if (own?.wd && !ownOnWikidata) {
-    result.own = { property: own.wd, value: own.wdForms ? own.wdForms(local)[0] : local, vocabulary: own.label, code: `${prefix}:${local}`, url: termIri, reference };
+    result.own = { property: own.wd, value: own.wdForms ? own.wdForms(local)[0] : local, vocabulary: own.label, code: `${prefix}:${local}`, url: pageIri, reference };
   }
 
   for (const b of mapRows) {
@@ -47,22 +49,27 @@ export async function gatherFixes(run, termIri, fetchFn) {
     const canon = t && canonicalPrefix(t.prefix);
     const vocab = canon && VOCABS[canon];
     const row = { vocabulary: vocab?.label ?? b.get("vocabulary")?.value ?? "", code: label, url: code };
+    // What EBI's OLS says about the code (src/adapters/ols.js); null when OLS does not cover it or was not asked.
+    const olsStatus = b.get("olsStatus")?.value ?? null;
+    let status = olsStatus ? { label: b.get("inOls")?.value ?? null, obsolete: olsStatus === "obsolete", missing: olsStatus === "not found", replacedBy: b.get("replacedBy")?.value ?? null, from: "OLS" } : null;
+    const named = status?.label ? ` (“${status.label}” in OLS)` : "";
     if (sources.has("obo") && !sources.has("wikidata")) {
       if (vocab?.wd && relation.includes("exact") && canon !== ownCanon) {
-        result.additions.push({ ...row, property: vocab.wd, value: vocab.wdForms ? vocab.wdForms(label)[0] : label, reference });
+        if (status?.obsolete || status?.missing) result.review.push({ ...row, note: `${status.obsolete ? "obsolete" : "not found"} in OLS${named}, so not proposed although ${result.label} states it as an exact match` });
+        else result.additions.push({ ...row, property: vocab.wd, value: vocab.wdForms ? vocab.wdForms(label)[0] : label, reference, status });
       }
     } else if (sources.has("wikidata") && !sources.has("obo")) {
-      // Same ontology, different term: is the one on Wikidata obsolete?
-      if (canon && canon === ownCanon && vocab.wd && wdValues.has(code)) {
-        const status = await oboTermStatus(fetchFn, `${prefix}_${label}`).catch(() => null);
+      if (vocab?.wd && wdValues.has(code)) {
+        // Without an OLS result (source switched off, old snapshot), still check same-ontology IDs directly.
+        if (!status && canon === ownCanon) status = await oboTermStatus(fetchFn, `${prefix}_${label}`).catch(() => null);
         if (status?.obsolete) {
           for (const value of wdValues.get(code)) result.removals.push({ ...row, property: vocab.wd, value, status });
           continue;
         }
-        result.review.push({ ...row, note: status ? `“${status.label}”, a different ${own.label} term` : `a different ${own.label} term` });
-      } else {
-        result.review.push({ ...row, note: `only on Wikidata` });
+        if (status?.missing) { result.review.push({ ...row, note: "not found in OLS: check the code on Wikidata" }); continue; }
+        if (canon === ownCanon) { result.review.push({ ...row, note: status?.label ? `“${status.label}”, a different ${own.label} term` : `a different ${own.label} term` }); continue; }
       }
+      if (isTerm) result.review.push({ ...row, note: `only on Wikidata${named}` });
     }
   }
   return result;

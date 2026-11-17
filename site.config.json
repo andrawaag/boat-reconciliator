@@ -3,7 +3,7 @@
   "tagline": "Scholarly profiles without a server",
   "intro": "This site gathers open scholarly metadata about a person, work, topic or venue from Wikidata, ORCID, Crossref, DataCite and OpenAlex. It merges it into one RDF graph and draws Scholia-style panels from it in your browser with Comunica. Pages listed below are pre-built snapshots; any other page is fetched live.",
   "accent": "#2f6f5e",
-  "sources": ["wikidata", "orcid", "crossref", "datacite", "openalex", "obo"],
+  "sources": ["wikidata", "orcid", "crossref", "datacite", "openalex", "obo", "ols"],
   "wikidataEndpoint": "https://qlever.dev/api/wikidata",
   "liveHarvest": true,
   "seeds": [

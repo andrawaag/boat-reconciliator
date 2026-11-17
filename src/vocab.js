@@ -102,3 +102,15 @@ export function wikidataFormsForObo(oboId) {
   if (!v?.wd || !v.wdForms) return null;
   return { property: v.wd, values: v.wdForms(id) };
 }
+
+// Which mapping targets EBI's Ontology Lookup Service can check, and under which IRI. OLS uses the same IRIs as
+// src/vocab.js for OBO ontologies, SNOMED CT, MeSH, Orphanet and EFO; there "not found" means the code does not exist
+// in the version OLS loaded. UMLS CUIs are looked up through MedGen, which reuses them but does not hold all of them,
+// so a miss there proves nothing. Other vocabularies (ICD, OMIM, …) are not in OLS and are not checked.
+const OLS_HOSTED = [/^http:\/\/purl\.obolibrary\.org\/obo\/[A-Za-z]+_\w+$/, /^http:\/\/snomed\.info\/id\/\d+$/, /^http:\/\/id\.nlm\.nih\.gov\/mesh\/\w+$/, /^http:\/\/www\.orpha\.net\/ORDO\/Orphanet_\d+$/, /^http:\/\/www\.ebi\.ac\.uk\/efo\/EFO_\d+$/];
+export function olsLookup(targetIri) {
+  if (OLS_HOSTED.some((re) => re.test(targetIri))) return { iri: targetIri, authoritative: true };
+  const umls = targetIri.match(/^http:\/\/linkedlifedata\.com\/resource\/umls\/id\/(C\d+)$/);
+  if (umls) return { iri: `${OBO}MEDGENCUI_${umls[1]}`, authoritative: false, via: "MedGen" };
+  return null;
+}

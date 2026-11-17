@@ -7,38 +7,38 @@
       "file": "data/author/wikidata_Q18618629.nq.gz",
       "quads": 2854,
       "bytes": 30617,
-      "generated": "2026-11-17T15:54:41.372Z",
+      "generated": "2026-11-17T17:52:40.743Z",
       "endpoint": "https://qlever.dev/api/wikidata",
       "log": [
         {
           "source": "wikidata",
           "what": "author neighbourhood",
           "quads": 1369,
-          "ms": 326
+          "ms": 436
         },
         {
           "source": "datacite",
           "what": "works with this ORCID",
           "quads": 0,
-          "ms": 166
+          "ms": 253
         },
         {
           "source": "orcid",
           "what": "record and works",
           "quads": 10,
-          "ms": 265
+          "ms": 279
         },
         {
           "source": "openalex",
           "what": "works by this author",
           "quads": 2336,
-          "ms": 924
+          "ms": 952
         },
         {
           "source": "crossref",
           "what": "works with this ORCID",
           "quads": 60,
-          "ms": 3640
+          "ms": 2838
         }
       ]
     },
@@ -48,51 +48,51 @@
       "iri": "https://orcid.org/0000-0001-9488-1870",
       "file": "data/author/orcid_0000-0001-9488-1870.nq.gz",
       "quads": 32330,
-      "bytes": 307547,
-      "generated": "2026-11-17T15:54:51.128Z",
+      "bytes": 307729,
+      "generated": "2026-11-17T17:52:49.257Z",
       "endpoint": "https://qlever.dev/api/wikidata",
       "log": [
         {
           "source": "wikidata",
           "what": "author neighbourhood",
           "quads": 6826,
-          "ms": 626
-        },
-        {
-          "source": "orcid",
-          "what": "record and works",
-          "quads": 1295,
-          "ms": 593
+          "ms": 943
         },
         {
           "source": "datacite",
           "what": "works with this ORCID",
           "quads": 6925,
-          "ms": 669
+          "ms": 720
+        },
+        {
+          "source": "orcid",
+          "what": "record and works",
+          "quads": 1295,
+          "ms": 899
         },
         {
           "source": "openalex",
           "what": "works by this author",
           "quads": 15572,
-          "ms": 2294
+          "ms": 1711
         },
         {
           "source": "crossref",
           "what": "works with this ORCID",
           "quads": 5911,
-          "ms": 4177
+          "ms": 3195
         },
         {
           "source": "crossref",
           "what": "141 more DOIs from ORCID",
           "quads": 270,
-          "ms": 2679
+          "ms": 1611
         },
         {
           "source": "datacite",
           "what": "135 more DOIs from ORCID",
           "quads": 3617,
-          "ms": 992
+          "ms": 955
         }
       ]
     },
@@ -103,14 +103,14 @@
       "file": "data/work/doi_10.1145_2629489.nq.gz",
       "quads": 6518,
       "bytes": 103073,
-      "generated": "2026-11-17T15:54:56.739Z",
+      "generated": "2026-11-17T17:52:51.654Z",
       "endpoint": "https://qlever.dev/api/wikidata",
       "log": [
         {
           "source": "wikidata",
           "what": "work neighbourhood",
           "quads": 5581,
-          "ms": 709
+          "ms": 902
         },
         {
           "source": "datacite",
@@ -122,13 +122,13 @@
           "source": "openalex",
           "what": "work, references, citing works",
           "quads": 907,
-          "ms": 1041
+          "ms": 1222
         },
         {
           "source": "crossref",
           "what": "work and references",
           "quads": 36,
-          "ms": 4764
+          "ms": 1326
         }
       ]
     },
@@ -139,14 +139,14 @@
       "file": "data/topic/wikidata_Q2013.nq.gz",
       "quads": 15735,
       "bytes": 214955,
-      "generated": "2026-11-17T15:54:59.297Z",
+      "generated": "2026-11-17T17:52:53.905Z",
       "endpoint": "https://qlever.dev/api/wikidata",
       "log": [
         {
           "source": "wikidata",
           "what": "topic neighbourhood",
           "quads": 20770,
-          "ms": 2322
+          "ms": 2034
         }
       ]
     },
@@ -156,27 +156,27 @@
       "iri": "http://www.wikidata.org/entity/Q27725928",
       "file": "data/venue/issn_2052-4463.nq.gz",
       "quads": 125840,
-      "bytes": 1302324,
-      "generated": "2026-11-17T15:55:23.151Z",
+      "bytes": 1302296,
+      "generated": "2026-11-17T17:53:06.347Z",
       "endpoint": "https://qlever.dev/api/wikidata",
       "log": [
         {
           "source": "wikidata",
           "what": "venue neighbourhood",
           "quads": 67766,
-          "ms": 2296
+          "ms": 3993
         },
         {
           "source": "openalex",
           "what": "source and recent works",
           "quads": 44974,
-          "ms": 4958
+          "ms": 3906
         },
         {
           "source": "crossref",
           "what": "journal and recent works",
           "quads": 30447,
-          "ms": 20778
+          "ms": 5632
         }
       ]
     },
@@ -185,16 +185,16 @@
       "aspect": "term",
       "iri": "http://purl.obolibrary.org/obo/MONDO_0005148",
       "file": "data/term/obo_MONDO_0005148.nq.gz",
-      "quads": 15224,
-      "bytes": 219945,
-      "generated": "2026-11-17T15:55:27.009Z",
+      "quads": 15248,
+      "bytes": 220230,
+      "generated": "2026-11-17T17:53:09.218Z",
       "endpoint": "https://qlever.dev/api/wikidata",
       "log": [
         {
           "source": "obo",
           "what": "term, hierarchy and cross-references (OLS)",
           "quads": 135,
-          "ms": 335
+          "ms": 331
         },
         {
           "source": "reconcile",
@@ -206,7 +206,13 @@
           "source": "wikidata",
           "what": "term neighbourhood",
           "quads": 21012,
-          "ms": 2992
+          "ms": 1561
+        },
+        {
+          "source": "ols",
+          "what": "codes checked in OLS",
+          "quads": 24,
+          "ms": 317
         }
       ]
     }
@@ -224,5 +230,5 @@
     "openalex:C2777180221": "obo:MONDO_0005148",
     "openalex:C2910068830": "obo:MONDO_0005148"
   },
-  "generated": "2026-11-17T15:55:27.010Z"
+  "generated": "2026-11-17T17:53:09.220Z"
 }

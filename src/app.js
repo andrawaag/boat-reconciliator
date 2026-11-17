@@ -120,6 +120,7 @@ function renderTable(rows, vars) {
     if (c === "sources") return h("td", {}, sourceBadges(t.value));
     if (t.termType === "NamedNode") return h("td", {}, entityLink(t.value, b.get(`${c}Label`)?.value, c));
     const numeric = /integer|int|decimal|double/.test(t.datatype?.value ?? "");
+    if (c === "olsStatus") return h("td", { class: `ols-${t.value.replace(/\W+/g, "-")}` }, t.value);
     return h("td", { class: numeric ? "num" : c === "date" ? "nowrap" : null }, t.value);
   })));
   const table = h("table", {}, h("thead", {}, h("tr", {}, cols.map((c) => h("th", {}, c)))), h("tbody", {}, body));
@@ -222,6 +223,7 @@ async function runPanel(graph, panel, el) {
     const result = await engine.query(query, { sources: [graph.store], unionDefaultGraph: true });
     const vars = (await result.metadata()).variables.map((v) => (v.variable ?? v).value);
     const rows = await (await result.execute()).toArray();
+    if (!rows.length && panel.hideEmpty) return el.remove();
     const render = RENDER[panel.render];
     if (!render) throw new Error(`Unknown renderer "${panel.render}". Use one of: ${Object.keys(RENDER).join(", ")}.`);
     const node = await render(rows, vars, panel, body);
@@ -422,14 +424,14 @@ async function termFixPanel(graph) {
       h("ul", { class: "fixes" },
         fix.own && option(fix.own, [h("b", {}, "Add "), `${fix.own.vocabulary} ID `, codeLink(fix.own), ` (${fix.own.property}).`]),
         fix.additions.map((a) => option(a, [h("b", {}, "Add "), `${a.vocabulary} `, codeLink(a), ` (${a.property}): ${fix.label} states it as an exact match.`])),
-        fix.removals.map((r) => option(r, [h("b", {}, "Remove "), `${r.vocabulary} `, codeLink(r), ` (${r.property}): obsolete in ${fix.label} (“${r.status.label}”)`, r.status.replacedBy ? `, replaced by ${r.status.replacedBy}` : "", ". Unticked by default; removing a statement can't be undone from here."]))),
+        fix.removals.map((r) => option(r, [h("b", {}, "Remove "), `${r.vocabulary} `, codeLink(r), ` (${r.property}): obsolete${r.status.from === "OLS" ? " according to OLS" : ` in ${fix.label}`}${r.status.label ? ` (“${r.status.label}”)` : ""}`, r.status.replacedBy ? [", replaced by ", h("a", { href: r.status.replacedBy, target: "_blank", rel: "noopener" }, r.status.replacedBy.split("/").pop())] : "", ". Unticked by default; removing a statement can't be undone from here."]))),
       h("h3", {}, "QuickStatements"),
       textarea,
       h("div", { class: "actions" },
         h("button", { type: "button", class: "primary", onclick: () => window.open(quickStatementsUrl(textarea.value), "_blank", "noopener") }, "Open in QuickStatements"),
         h("button", { type: "button", onclick: async (e) => { try { await navigator.clipboard.writeText(textarea.value); e.target.textContent = "Copied"; } catch { textarea.select(); } } }, "Copy commands")),
-      h("p", { class: "muted small" }, `Additions cite ${fix.label} (stated in, reference URL, retrieved) and mark codes with mapping relation type “exact match” (P4390). You run the edits in QuickStatements under your own Wikimedia account; review them first.`),
-    ] : h("p", {}, `Wikidata already has this term's ID and every code ${fix.label} states as an exact match.`),
+      h("p", { class: "muted small" }, !fix.isTerm ? "Codes were checked in EBI's Ontology Lookup Service. You run the edits in QuickStatements under your own Wikimedia account; review them first." : `Additions cite ${fix.label} (stated in, reference URL, retrieved) and mark codes with mapping relation type “exact match” (P4390). You run the edits in QuickStatements under your own Wikimedia account; review them first.`),
+    ] : h("p", {}, fix.isTerm ? `Wikidata already has this term's ID and every code ${fix.label} states as an exact match.` : "No edits proposed."),
     fix.review.length ? [
       h("h3", {}, "Only on Wikidata (review; no edits proposed)"),
       h("ul", { class: "matches" }, fix.review.map((r) => h("li", {}, `${r.vocabulary} `, codeLink(r), ` · ${r.note}`))),
@@ -502,10 +504,10 @@ async function entityPage(aspectHint, rawKey) {
       const after = grid.querySelector("#panel-works");
       after ? after.after(el) : grid.append(el);
     }).catch((err) => console.warn("Missing-works panel:", err));
-  if (aspect === "term" && config.wikidataFixes && config.sources.includes("wikidata"))
+  if ((aspect === "term" || aspect === "topic") && config.wikidataFixes && config.sources.includes("wikidata"))
     termFixPanel(graph).then((el) => {
       if (!el || myRoute !== routeId) return;
-      const after = grid.querySelector("#panel-agreement");
+      const after = grid.querySelector(aspect === "term" ? "#panel-agreement" : "#panel-mappings");
       after ? after.after(el) : grid.prepend(el);
     }).catch((err) => console.warn("Improve-Wikidata panel:", err));
 }

@@ -2,7 +2,7 @@
 
 **koetai reconciliator** reconciles entities across linked-data sources into one RDF graph per entity, and publishes the result as a static site with no server. It's a GitHub template, so anyone can run their own instance.
 
-It covers scholarly entities and ontology terms. Each page (a researcher, a work, a topic or a venue) is one RDF graph, merged in your visitors' browsers from **Wikidata, ORCID, Crossref, DataCite, OpenAlex and OBO ontologies (via OLS)** and queried with [Comunica](https://comunica.dev). GitHub Pages hosts the site, and a GitHub Action keeps pre-built snapshots of the pages you feature. You add your own visualizations as a SPARQL query plus a few lines of config.
+It covers scholarly entities and ontology terms. Each page (a researcher, a work, a topic or a venue) is one RDF graph, merged in your visitors' browsers from **Wikidata, ORCID, Crossref, DataCite, OpenAlex and OBO ontologies (via OLS)**, with every terminology code checked in OLS, and queried with [Comunica](https://comunica.dev). GitHub Pages hosts the site, and a GitHub Action keeps pre-built snapshots of the pages you feature. You add your own visualizations as a SPARQL query plus a few lines of config.
 
 Inspired by [Scholia](https://github.com/WDscholia/scholia). The aim is to go native on RDF and go beyond Wikidata: the same adapter → reconcile → query pipeline is meant to extend to other domains and terminologies, OBO Foundry ontologies are the first: an ontology term's page reconciles its cross-references to SNOMED CT, MeSH, ICD-9/10/11, UMLS and others against Wikidata. (Developed under the working names frugalScholia and koetai-bibliography.)
 
@@ -29,7 +29,7 @@ Snapshots refresh every Monday. Run the workflow by hand (**Actions → site →
 | `liveHarvest` | `false` limits the site to its snapshots: no live API calls from visitors' browsers |
 | `wikidataCreate` | `false` hides the "Not on Wikidata yet" panel on author pages (default `true`) |
 | `wikidataWorks` | `false` hides the "Works missing on Wikidata" panel on author pages (default `true`) |
-| `wikidataFixes` | `false` hides the "Improve Wikidata" panel on ontology term pages (default `true`) |
+| `wikidataFixes` | `false` hides the "Improve Wikidata" panel on ontology term and topic pages (default `true`) |
 | `seeds` | Entities to pre-build and feature on the home page: `orcid:…`, `doi:…`, `issn:…`, `wikidata:Q…`, `openalex:A…/W…/S…/T…`, `obo:MONDO_0005148` (an OBO term; `MONDO:0005148` works too). An object `{ "key": "…", "aspect": "author" }` forces the page type |
 | `panels` | Per page type (`author`, `work`, `topic`, `venue`, `term`, `common`): `hide` built-in panels by id, `add` your own |
 
@@ -122,10 +122,23 @@ Any OBO Foundry term has a page: search by name (results come from Wikidata and 
 
 The term page shows:
 - **Agreement between sources:** per terminology, how many codes both sources give, and how many only one does.
-- **Mappings to other terminologies:** each code with its relation (`exact` for an exact match or Wikidata external ID, `xref` for a plain database cross-reference) and source badges.
+- **Mappings to other terminologies:** each code with its relation (`exact` for an exact match or Wikidata external ID, `xref` for a plain database cross-reference), source badges, and what OLS says about it (see below).
 - The parents, children and synonyms, plus works about the term on Wikidata (the newest 1,000).
 
 Example: for type 2 diabetes (`MONDO:0005148`), MONDO and Wikidata agree on DOID, ICD-10, ICD-11, MeSH, NCIt and UMLS. But Wikidata's MONDO ID for the item points to an obsolete term, and MONDO's SNOMED CT code is not on Wikidata.
+
+### Concept check through EBI's OLS
+
+Every code a term or topic page maps to, whether it comes from the ontology or from a Wikidata external ID, is looked up in [EBI's Ontology Lookup Service](https://www.ebi.ac.uk/ols4/) (`src/adapters/ols.js`, graph `urn:koetai-reconciliator:source:ols`). The mappings table shows its name in OLS and its status:
+
+- **current**: OLS has the code and it is in use.
+- **obsolete**: OLS marks it obsolete, with its replacement where the ontology gives one.
+- **not found**: OLS loads that terminology but has no such code (often a typo or a retired code on Wikidata).
+- **empty**: not checked, because OLS does not cover the terminology (ICD, OMIM, …).
+
+OLS covers all OBO ontologies it loads, SNOMED CT, MeSH, Orphanet (ORDO) and EFO under the same IRIs this site uses. UMLS CUIs are checked through MedGen, which reuses them; a CUI that MedGen lacks is left unchecked. Codes of OBO ontologies that OLS doesn't load (such as NANDO) are left unchecked as well.
+
+Wikidata topic pages that carry such codes get the same checked mappings panel. Topic pages without codes don't show it.
 
 ### Improve Wikidata from a term page
 
@@ -133,7 +146,9 @@ When a term is linked to a Wikidata item, an **Improve Wikidata** panel compares
 
 - **Add the term's own ID** (e.g. P5270 for MONDO) when the item was only matched through shared codes.
 - **Add codes the ontology states as exact matches** but the item lacks (e.g. SNOMED CT P5806), with qualifier mapping relation type (P4390) = exact match (Q39893449).
-- **Remove an obsolete ID**: when the item holds a different ID of the same ontology and OLS reports that term as obsolete. This one is unticked by default.
+- **Remove an obsolete ID**: when the item holds a code, in any terminology with a Wikidata property, that OLS reports as obsolete. This one is unticked by default. It also appears on Wikidata topic pages.
+
+An exact match that OLS reports as obsolete or not found is not proposed for adding; it is listed for review instead.
 
 Additions are referenced with stated in (S248) the ontology's Wikidata item (MONDO Q27468140, DO Q5282129, HPO Q17027854, GO Q135085), reference URL (S854) to the term's PURL, and retrieved (S813). New IDs use the spelling most common on Wikidata for that property (e.g. `MONDO_0005148`, `GO:0006915`). Codes that only Wikidata has are listed for review, without proposed edits. As on author pages, you run the edits in QuickStatements under your own account.
 
@@ -151,7 +166,8 @@ Crossref  ── REST API                                │
 DataCite  ── REST API (Zenodo, figshare, arXiv, …)   ├─► reconcile (src/reconcile.js): merge nodes that share an
 OpenAlex  ── REST API (authors, venues, topics,      │   ORCID / DOI / OBO term / QID / ISSN / OpenAlex id;
               citing works)                          │   codes in other terminologies stay mappings (src/vocab.js)
-OBO       ── OLS4 API (terms, hierarchy, xrefs)      ┘                         │
+OBO       ── OLS4 API (terms, hierarchy, xrefs)      │
+OLS check ── OLS4 API (status of every mapped code)  ┘                         │
                                                               one merged N-Quads graph per entity
                                                        ┌───────────────────────┴───────────────────┐
                                         GitHub Action → data/**/*.nq.gz              browser → harvested live
@@ -174,6 +190,7 @@ Everything is mapped to [schema.org](https://schema.org). Each source writes to 
 | Topic | Wikidata items and OpenAlex topics (`schema:DefinedTerm`), `schema:name` |
 | Ontology term | `schema:DefinedTerm`, `schema:termCode`, `schema:inDefinedTermSet`, `rdfs:subClassOf`, `oboInOwl:has…Synonym`, `owl:deprecated` |
 | Mapping | `skos:exactMatch` or `oboInOwl:hasDbXref` to a code node with `kr:vocabulary` and `kr:code` |
+| OLS check | on the code node: `kr:olsStatus` (`current`, `obsolete`, `not found`), `kr:olsName`, `kr:olsOntology`, `obo:IAO_0100001` (replaced by) |
 | Identity | `schema:sameAs` to `https://orcid.org/…`, `https://doi.org/…`, `http://www.wikidata.org/entity/Q…`, `urn:issn:…`, `https://openalex.org/…`, `http://purl.obolibrary.org/obo/…` |
 | Extras | `kr:citedByCount`, `kr:authorship` → `kr:agent` + `kr:position` (author order), where `kr:` = `urn:koetai-reconciliator:vocab:` |
 
@@ -206,7 +223,7 @@ Write `src/adapters/<name>.js` returning quads in graph `urn:koetai-reconciliato
 - **Live pages:** a live page appears once its slowest source answers. Crossref sometimes takes 10–15 seconds.
 - **OpenAlex quota:** anonymous use is metered at about 1,000 requests per day per IP. That's ample for visitors; snapshot runs should use `OPENALEX_API_KEY`.
 - **Wikidata author order:** Wikidata's author ordinals (`P1545`) are not mapped yet. Author order comes from Crossref, DataCite and OpenAlex.
-- **Terminology pages:** only OBO terms have their own pages. SNOMED CT, MeSH and ICD codes are shown as mappings and link out. OLS also hosts SNOMED CT and MeSH, so they could become sources next. Term pages show only the newest 1,000 works about the term from Wikidata.
+- **Terminology pages:** only OBO terms have their own pages. SNOMED CT, MeSH and ICD codes are shown as mappings and link out. OLS checks SNOMED CT and MeSH codes, but they don't have pages of their own yet. Term pages show only the newest 1,000 works about the term from Wikidata.
 - **Language and search:** labels are English only, and name search uses Wikidata's search API.
 - **Large pages:** a journal page (about 120k quads) takes several seconds to query in the browser.
 - **Tests:** there are no automated tests yet. Behaviour was checked by hand with `npm run check` and in a browser.

@@ -15,6 +15,7 @@
   --datacite: #1f7a8c;
   --openalex: #a8326e;
   --obo: #6b5a1e;
+  --ols: #1e5b6b;
   --snapshot: #6c5aa8;
   --reconcile: #707070;
   --radius: 10px;
@@ -39,6 +40,7 @@
     --datacite: #6cc5d6;
     --openalex: #ef8fbd;
     --obo: #d9c27a;
+    --ols: #7ac4d9;
     --snapshot: #b4a6e8;
     --reconcile: #a8a8a8;
     color-scheme: dark;
@@ -102,6 +104,7 @@ h2 { font-size: 15px; margin: 0; }
 .src-datacite { background: var(--datacite); }
 .src-openalex { background: var(--openalex); }
 .src-obo { background: var(--obo); }
+.src-ols { background: var(--ols); }
 .src-snapshot { background: var(--snapshot); }
 .src-reconcile { background: var(--reconcile); }
 @media (prefers-color-scheme: dark) { .badge { color: #111; } }
@@ -161,3 +164,7 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
   main { padding: 16px; }
   h1 { font-size: 26px; }
 }
+
+/* OLS concept check in the mappings tables */
+td.ols-obsolete, td.ols-not-found { color: var(--crossref); font-weight: 600; }
+td.ols-current { color: var(--muted); }
