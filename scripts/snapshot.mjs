@@ -74,5 +74,11 @@ for (const { parsed: key, aspect: aspectHint } of seeds) {
   for (const i of [g.iri, ...sameAs]) { const a = iriToKey(i); if (a && keyString(a) !== k) manifest.aliases[keyString(a)] = k; }
   console.log(`ok   ${k} (${g.aspect}): ${g.quads.length} quads, ${(gz.length / 1024).toFixed(0)} KiB gz, ${Date.now() - t0} ms`);
 }
-manifest.generated = new Date().toISOString();
-await writeFile(new URL("data/manifest.json", root), JSON.stringify(manifest, null, 2) + "\n");
+// Only touch the manifest when something changed, so a push without new seeds makes no commit.
+const { generated: _prev, ...rest } = manifest;
+let before = null;
+try { const { generated: _, ...b } = JSON.parse(await loadText("data/manifest.json")); before = JSON.stringify(b); } catch {}
+if (JSON.stringify(rest) !== before) {
+  manifest.generated = new Date().toISOString();
+  await writeFile(new URL("data/manifest.json", root), JSON.stringify(manifest, null, 2) + "\n");
+} else console.log("no changes");
