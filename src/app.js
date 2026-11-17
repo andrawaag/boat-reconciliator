@@ -1,4 +1,4 @@
-// frugalScholia web app: routing, loading a graph (snapshot or live harvest), and rendering panels.
+// koetai-bibliography web app: routing, loading a graph (snapshot or live harvest), and rendering panels.
 import { QueryEngine, Store, Parser, Writer, DataFactory } from "../vendor/comunica.js";
 import { ASPECTS, ENDPOINTS, fillPanel } from "./aspects.js";
 import { normalizeConfig, panelsFor } from "./config.js";
@@ -16,8 +16,8 @@ document.documentElement.style.setProperty("--accent-config", config.accent);
 
 // ---------- settings ----------
 const store = {
-  get: (k, d) => { try { return localStorage.getItem(`fs.${k}`) ?? d; } catch { return d; } },
-  set: (k, v) => { try { localStorage.setItem(`fs.${k}`, v); } catch {} },
+  get: (k, d) => { try { return localStorage.getItem(`kb.${k}`) ?? d; } catch { return d; } },
+  set: (k, v) => { try { localStorage.setItem(`kb.${k}`, v); } catch {} },
 };
 const endpoints = { site: { label: `Site default (${new URL(config.wikidataEndpoint).host})`, url: config.wikidataEndpoint }, ...ENDPOINTS };
 const settings = { mode: config.liveHarvest ? store.get("mode", "auto") : "snapshot", endpoint: store.get("endpoint", "site") };

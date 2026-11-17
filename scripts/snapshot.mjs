@@ -24,7 +24,7 @@ const ctx = {
   loadText,
   endpoint: process.env.WIKIDATA_ENDPOINT || config.wikidataEndpoint,
   sources: config.sources,
-  headers: { "User-Agent": "frugalScholia-snapshot/0.3 (static site generator)" },
+  headers: { "User-Agent": "koetai-bibliography-snapshot/0.3 (static site generator)" },
   openalexKey: process.env.OPENALEX_API_KEY || undefined,
 };
 

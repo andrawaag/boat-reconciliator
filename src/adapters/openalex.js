@@ -4,7 +4,7 @@
 // the browser never sees a key.
 import { NS, iri, quadSink, dateLiteral } from "../model.js";
 import { politeJson } from "../http.js";
-const S = NS.schema, FS = NS.fs;
+const S = NS.schema, FS = NS.kb;
 const API = "https://api.openalex.org";
 const WORK_FIELDS = "id,doi,display_name,publication_date,publication_year,type,primary_location,authorships,topics,cited_by_count";
 const MAX_PAGES = 5; // 5 x 200 works
@@ -55,7 +55,7 @@ function mapWork(DF, out, w, { references = false } = {}) {
     out.add(person, NS.rdf + "type", S + "Person");
     out.lit(person, S + "name", a.author.display_name);
     out.add(node, S + "author", person);
-    const as = `urn:frugalscholia:authorship:openalex:${short(w.id)}:${i + 1}`;
+    const as = `urn:koetai-bibliography:authorship:openalex:${short(w.id)}:${i + 1}`;
     out.add(node, FS + "authorship", as);
     out.add(as, FS + "agent", person);
     out.add(as, FS + "position", DF.literal(String(i + 1), DF.namedNode(NS.xsd + "integer")));

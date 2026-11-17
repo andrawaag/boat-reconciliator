@@ -4,7 +4,7 @@ import { ASPECTS, COMMON_PANELS, ENDPOINTS } from "./aspects.js";
 import { SOURCES } from "./model.js";
 
 export const DEFAULT_CONFIG = {
-  title: "frugalScholia",
+  title: "koetai-bibliography",
   tagline: "Scholarly profiles without a server",
   intro: "",
   accent: "#2f6f5e",

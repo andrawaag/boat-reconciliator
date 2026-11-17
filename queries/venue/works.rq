@@ -2,7 +2,7 @@
 SELECT ?work (SAMPLE(?n) AS ?workLabel) (MAX(STR(?d)) AS ?date) (SAMPLE(?v) AS ?venue) (SAMPLE(?vn) AS ?venueLabel)
        (GROUP_CONCAT(DISTINCT ?src; separator=" ") AS ?sources) WHERE {
   GRAPH ?g { ?work schema:isPartOf <{{iri}}> }
-  BIND(STRAFTER(STR(?g), "urn:frugalscholia:source:") AS ?src)
+  BIND(STRAFTER(STR(?g), "urn:koetai-bibliography:source:") AS ?src)
   OPTIONAL { ?work schema:name ?n }
   OPTIONAL { ?work schema:datePublished ?d }
   OPTIONAL { ?work schema:isPartOf ?v OPTIONAL { ?v schema:name ?vn } }

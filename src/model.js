@@ -1,4 +1,4 @@
-// The frugalScholia data model: schema.org, with one named graph per source.
+// The koetai-bibliography data model: schema.org, with one named graph per source.
 // Identity: people are keyed by ORCID, works by DOI, venues by ISSN, everything else by Wikidata QID.
 // Adapters mint IRIs from whatever identifiers they have and assert schema:sameAs; src/reconcile.js merges them.
 
@@ -9,11 +9,11 @@ export const NS = {
   rdf: "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
   rdfs: "http://www.w3.org/2000/01/rdf-schema#",
   xsd: "http://www.w3.org/2001/XMLSchema#",
-  fs: "urn:frugalscholia:vocab:",
+  kb: "urn:koetai-bibliography:vocab:",
 };
 
 export const SOURCES = ["wikidata", "orcid", "crossref", "datacite", "openalex"];
-export const graphFor = (source) => `urn:frugalscholia:source:${source}`;
+export const graphFor = (source) => `urn:koetai-bibliography:source:${source}`;
 
 export const iri = {
   wikidata: (q) => NS.wd + q,

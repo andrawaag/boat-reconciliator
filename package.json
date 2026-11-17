@@ -1,5 +1,5 @@
 {
-  "name": "frugalscholia",
+  "name": "koetai-bibliography",
   "version": "0.2.0",
   "description": "Scholia-style scholarly profiles from Wikidata, as a static site powered by Comunica",
   "scripts": {

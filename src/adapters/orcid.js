@@ -20,7 +20,7 @@ export async function harvestOrcid(ctx, orcid) {
     const summary = group["work-summary"]?.[0];
     if (!summary) continue;
     const doi = (group["external-ids"]?.["external-id"] ?? []).find((x) => x["external-id-type"] === "doi")?.["external-id-value"];
-    const w = doi ? iri.doi(doi) : `urn:frugalscholia:orcid-work:${orcid}:${summary["put-code"]}`;
+    const w = doi ? iri.doi(doi) : `urn:koetai-bibliography:orcid-work:${orcid}:${summary["put-code"]}`;
     if (doi) dois.push(doi.toLowerCase());
     out.add(w, NS.rdf + "type", S + "ScholarlyArticle");
     out.add(w, S + "author", me);

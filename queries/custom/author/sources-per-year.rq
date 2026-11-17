@@ -4,5 +4,5 @@ SELECT ?year ?source (COUNT(DISTINCT ?work) AS ?works) WHERE {
   GRAPH ?g { ?work schema:author <{{iri}}> }
   ?work schema:datePublished ?d .
   BIND(SUBSTR(STR(?d), 1, 4) AS ?year)
-  BIND(STRAFTER(STR(?g), "urn:frugalscholia:source:") AS ?source)
+  BIND(STRAFTER(STR(?g), "urn:koetai-bibliography:source:") AS ?source)
 } GROUP BY ?year ?source ORDER BY ?year

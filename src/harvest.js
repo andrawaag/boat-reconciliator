@@ -1,4 +1,4 @@
-// Gathers everything frugalScholia knows about one entity from all sources and returns one merged RDF graph.
+// Gathers everything koetai-bibliography knows about one entity from all sources and returns one merged RDF graph.
 // Runs unchanged in the browser (live mode) and in Node (the snapshot GitHub Action).
 // ctx = { engine (Comunica), DF (RDF/JS DataFactory), fetch, loadText(path), endpoint, headers,
 //         sources? (names to use; default all), openalexKey? (Node only) }

@@ -1,6 +1,6 @@
 # Works this work cites
 SELECT ?work (SAMPLE(?n) AS ?workLabel) (MAX(STR(?d)) AS ?date) (GROUP_CONCAT(DISTINCT ?src; separator=" ") AS ?sources) WHERE {
   GRAPH ?g { <{{iri}}> schema:citation ?work }
-  BIND(STRAFTER(STR(?g), "urn:frugalscholia:source:") AS ?src)
+  BIND(STRAFTER(STR(?g), "urn:koetai-bibliography:source:") AS ?src)
   OPTIONAL { ?work schema:name ?n } OPTIONAL { ?work schema:datePublished ?d }
 } GROUP BY ?work ORDER BY DESC(?date) LIMIT 1000

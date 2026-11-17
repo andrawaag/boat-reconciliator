@@ -1,10 +1,10 @@
-# frugalScholia
+# koetai-bibliography
 
 A GitHub template for running your own Scholia-style scholarly profile site, with no server.
 
 Each page (a researcher, a work, a topic or a venue) is one RDF graph, merged in your visitors' browsers from **Wikidata, ORCID, Crossref, DataCite and OpenAlex** and queried with [Comunica](https://comunica.dev). GitHub Pages hosts the site, and a GitHub Action keeps pre-built snapshots of the pages you feature. You add your own visualizations as a SPARQL query plus a few lines of config.
 
-Inspired by [Scholia](https://github.com/WDscholia/scholia). The aim is to go native on RDF and go beyond Wikidata.
+Inspired by [Scholia](https://github.com/WDscholia/scholia). The aim is to go native on RDF and go beyond Wikidata. (Developed under the working name frugalScholia.)
 
 ---
 
@@ -98,7 +98,7 @@ The same harvesting code (`src/harvest.js`) runs in Node for snapshots and in th
 
 ### Data model
 
-Everything is mapped to [schema.org](https://schema.org). Each source writes to its own named graph `urn:frugalscholia:source:<name>`, so panels can query provenance with `GRAPH ?g { … }`. Panels query the union of all graphs.
+Everything is mapped to [schema.org](https://schema.org). Each source writes to its own named graph `urn:koetai-bibliography:source:<name>`, so panels can query provenance with `GRAPH ?g { … }`. Panels query the union of all graphs.
 
 | Concept | Terms |
 |---|---|
@@ -107,7 +107,7 @@ Everything is mapped to [schema.org](https://schema.org). Each source writes to 
 | Venue | `schema:Periodical`, `schema:name`, `schema:issn` |
 | Topic | Wikidata items and OpenAlex topics (`schema:DefinedTerm`), `schema:name` |
 | Identity | `schema:sameAs` to `https://orcid.org/…`, `https://doi.org/…`, `http://www.wikidata.org/entity/Q…`, `urn:issn:…`, `https://openalex.org/…` |
-| Extras | `fs:citedByCount`, `fs:authorship` → `fs:agent` + `fs:position` (author order), where `fs:` = `urn:frugalscholia:vocab:` |
+| Extras | `kb:citedByCount`, `kb:authorship` → `kb:agent` + `kb:position` (author order), where `kb:` = `urn:koetai-bibliography:vocab:` |
 
 **Reconciliation.** Nodes linked by `schema:sameAs` are merged under one canonical IRI: ORCID > DOI > Wikidata > ISSN > OpenAlex. Within a single work, authors from different sources are also joined by name: an exact full-name match between identified authors, or a family name plus first initial for authors who only have a per-work ID. Matching never crosses works, so namesakes on different papers stay separate.
 
@@ -130,7 +130,7 @@ Environment variables: `WIKIDATA_ENDPOINT`, `OPENALEX_API_KEY`, `MAX_QUADS` (sna
 
 ## Adding a source
 
-Write `src/adapters/<name>.js` returning quads in graph `urn:frugalscholia:source:<name>`, and use the IRI helpers in `src/model.js` so identities line up. Call it from `src/harvest.js`, add the name to `SOURCES` in `src/model.js`, and give it a badge colour in `src/style.css`. A source with a SPARQL endpoint can be queried through Comunica, as the Wikidata adapter does.
+Write `src/adapters/<name>.js` returning quads in graph `urn:koetai-bibliography:source:<name>`, and use the IRI helpers in `src/model.js` so identities line up. Call it from `src/harvest.js`, add the name to `SOURCES` in `src/model.js`, and give it a badge colour in `src/style.css`. A source with a SPARQL endpoint can be queried through Comunica, as the Wikidata adapter does.
 
 ## Known limits
 
