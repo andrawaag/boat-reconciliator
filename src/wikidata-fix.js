@@ -49,13 +49,14 @@ export async function gatherFixes(run, pageIri, fetchFn) {
     const canon = t && canonicalPrefix(t.prefix);
     const vocab = canon && VOCABS[canon];
     const row = { vocabulary: vocab?.label ?? b.get("vocabulary")?.value ?? "", code: label, url: code };
-    // What EBI's OLS says about the code (src/adapters/ols.js); null when OLS does not cover it or was not asked.
-    const olsStatus = b.get("olsStatus")?.value ?? null;
-    let status = olsStatus ? { label: b.get("inOls")?.value ?? null, obsolete: olsStatus === "obsolete", missing: olsStatus === "not found", replacedBy: b.get("replacedBy")?.value ?? null, from: "OLS" } : null;
-    const named = status?.label ? ` (“${status.label}” in OLS)` : "";
+    // What OLS (src/adapters/ols.js) or RDF Portal (NANDO) says about the code; null when neither covers it or was asked.
+    const checked = b.get("status")?.value ?? null;
+    const from = b.get("checkedIn")?.value ?? "OLS";
+    let status = checked ? { label: b.get("checkedName")?.value ?? null, obsolete: checked === "obsolete", missing: checked === "not found", replacedBy: b.get("replacedBy")?.value ?? null, from } : null;
+    const named = status?.label ? ` (“${status.label}” in ${from})` : "";
     if (sources.has("obo") && !sources.has("wikidata")) {
       if (vocab?.wd && relation.includes("exact") && canon !== ownCanon) {
-        if (status?.obsolete || status?.missing) result.review.push({ ...row, note: `${status.obsolete ? "obsolete" : "not found"} in OLS${named}, so not proposed although ${result.label} states it as an exact match` });
+        if (status?.obsolete || status?.missing) result.review.push({ ...row, note: `${status.obsolete ? "obsolete" : "not found"} in ${status.from}${named}, so not proposed although ${result.label} states it as an exact match` });
         else result.additions.push({ ...row, property: vocab.wd, value: vocab.wdForms ? vocab.wdForms(label)[0] : label, reference, status });
       }
     } else if (sources.has("wikidata") && !sources.has("obo")) {
@@ -66,7 +67,7 @@ export async function gatherFixes(run, pageIri, fetchFn) {
           for (const value of wdValues.get(code)) result.removals.push({ ...row, property: vocab.wd, value, status });
           continue;
         }
-        if (status?.missing) { result.review.push({ ...row, note: "not found in OLS: check the code on Wikidata" }); continue; }
+        if (status?.missing) { result.review.push({ ...row, note: `not found in ${status.from}: check the code on Wikidata` }); continue; }
         if (canon === ownCanon) { result.review.push({ ...row, note: status?.label ? `“${status.label}”, a different ${own.label} term` : `a different ${own.label} term` }); continue; }
       }
       if (isTerm) result.review.push({ ...row, note: `only on Wikidata${named}` });

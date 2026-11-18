@@ -7,6 +7,7 @@ import { parseTargetIri, SKOS, OBOINOWL } from "./vocab.js";
 import { lookupQid, lookupOboQid, matchQidByCodes, detectAspect, harvestWikidata } from "./adapters/wikidata.js";
 import { harvestObo } from "./adapters/obo.js";
 import { checkConceptsOls } from "./adapters/ols.js";
+import { harvestTogoid, checkNando } from "./adapters/rdfportal.js";
 import { findByStatementsLive } from "./wikidata-live.js";
 import { wikidataFormsForObo } from "./vocab.js";
 import { harvestOrcid } from "./adapters/orcid.js";
@@ -99,11 +100,19 @@ export async function harvest(ctx, key, aspectHint, onProgress = () => {}) {
   }
   if (ids.openalex && ids.openalex[0] !== { author: "A", work: "W", venue: "S", topic: "T" }[aspect] && !(aspect === "topic" && ids.openalex[0] === "C")) delete ids.openalex;
 
-  // 2b. Check every code the page maps to in EBI's OLS: does it exist, and is it obsolete?
-  if ((aspect === "term" || aspect === "topic") && on("ols")) {
+  // 2a. RDF Portal: TogoID's ID links for the term, a third view on its mappings next to the ontology's and Wikidata's.
+  if (aspect === "term" && ids.obo && on("rdfportal")) await step("rdfportal", "TogoID links", () => harvestTogoid(ctx, iri.obo(ids.obo), iri.obo(ids.obo)));
+
+  // 2b. Check every code the page maps to: in EBI's OLS, and NANDO codes (not in OLS) in RDF Portal.
+  if (aspect === "term" || aspect === "topic") {
     const own = ids.obo ? iri.obo(ids.obo) : null;
-    const codes = quads.filter((q) => (q.predicate.value === SKOS + "exactMatch" || q.predicate.value === OBOINOWL + "hasDbXref") && q.object.value !== own).map((q) => q.object.value);
-    if (codes.length) await step("ols", "codes checked in OLS", () => checkConceptsOls(ctx, codes));
+    const MAP = new Set([SKOS + "exactMatch", SKOS + "closeMatch", OBOINOWL + "hasDbXref"]);
+    const codes = [...new Set(quads.filter((q) => MAP.has(q.predicate.value) && q.object.value !== own).map((q) => q.object.value))];
+    const nando = codes.filter((c) => c.startsWith("http://nanbyodata.jp/ontology/NANDO_"));
+    await Promise.all([
+      codes.length && on("ols") ? step("ols", "codes checked in OLS", () => checkConceptsOls(ctx, codes)) : null,
+      nando.length && on("rdfportal") ? step("rdfportal", "NANDO codes checked", () => checkNando(ctx, nando)) : null,
+    ]);
   }
 
   // 3. Source-specific enrichment; independent hosts, so in parallel.

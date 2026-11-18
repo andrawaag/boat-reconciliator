@@ -12,7 +12,7 @@ export const NS = {
   kr: "urn:koetai-reconciliator:vocab:",
 };
 
-export const SOURCES = ["wikidata", "orcid", "crossref", "datacite", "openalex", "obo", "ols"];
+export const SOURCES = ["wikidata", "orcid", "crossref", "datacite", "openalex", "obo", "ols", "rdfportal"];
 export const graphFor = (source) => `urn:koetai-reconciliator:source:${source}`;
 
 export const iri = {

@@ -16,6 +16,7 @@
   --openalex: #a8326e;
   --obo: #6b5a1e;
   --ols: #1e5b6b;
+  --rdfportal: #5b3a7a;
   --snapshot: #6c5aa8;
   --reconcile: #707070;
   --radius: 10px;
@@ -41,6 +42,7 @@
     --openalex: #ef8fbd;
     --obo: #d9c27a;
     --ols: #7ac4d9;
+    --rdfportal: #c4a3e6;
     --snapshot: #b4a6e8;
     --reconcile: #a8a8a8;
     color-scheme: dark;
@@ -105,6 +107,7 @@ h2 { font-size: 15px; margin: 0; }
 .src-openalex { background: var(--openalex); }
 .src-obo { background: var(--obo); }
 .src-ols { background: var(--ols); }
+.src-rdfportal { background: var(--rdfportal); }
 .src-snapshot { background: var(--snapshot); }
 .src-reconcile { background: var(--reconcile); }
 @media (prefers-color-scheme: dark) { .badge { color: #111; } }
@@ -166,5 +169,5 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
 }
 
 /* OLS concept check in the mappings tables */
-td.ols-obsolete, td.ols-not-found { color: var(--crossref); font-weight: 600; }
-td.ols-current { color: var(--muted); }
+td.check-obsolete, td.check-not-found { color: var(--crossref); font-weight: 600; }
+td.check-current { color: var(--muted); }

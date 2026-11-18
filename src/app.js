@@ -120,7 +120,7 @@ function renderTable(rows, vars) {
     if (c === "sources") return h("td", {}, sourceBadges(t.value));
     if (t.termType === "NamedNode") return h("td", {}, entityLink(t.value, b.get(`${c}Label`)?.value, c));
     const numeric = /integer|int|decimal|double/.test(t.datatype?.value ?? "");
-    if (c === "olsStatus") return h("td", { class: `ols-${t.value.replace(/\W+/g, "-")}` }, t.value);
+    if (c === "status") return h("td", { class: `check-${t.value.replace(/\W+/g, "-")}` }, t.value);
     return h("td", { class: numeric ? "num" : c === "date" ? "nowrap" : null }, t.value);
   })));
   const table = h("table", {}, h("thead", {}, h("tr", {}, cols.map((c) => h("th", {}, c)))), h("tbody", {}, body));
@@ -424,7 +424,7 @@ async function termFixPanel(graph) {
       h("ul", { class: "fixes" },
         fix.own && option(fix.own, [h("b", {}, "Add "), `${fix.own.vocabulary} ID `, codeLink(fix.own), ` (${fix.own.property}).`]),
         fix.additions.map((a) => option(a, [h("b", {}, "Add "), `${a.vocabulary} `, codeLink(a), ` (${a.property}): ${fix.label} states it as an exact match.`])),
-        fix.removals.map((r) => option(r, [h("b", {}, "Remove "), `${r.vocabulary} `, codeLink(r), ` (${r.property}): obsolete${r.status.from === "OLS" ? " according to OLS" : ` in ${fix.label}`}${r.status.label ? ` (“${r.status.label}”)` : ""}`, r.status.replacedBy ? [", replaced by ", h("a", { href: r.status.replacedBy, target: "_blank", rel: "noopener" }, r.status.replacedBy.split("/").pop())] : "", ". Unticked by default; removing a statement can't be undone from here."]))),
+        fix.removals.map((r) => option(r, [h("b", {}, "Remove "), `${r.vocabulary} `, codeLink(r), ` (${r.property}): obsolete${r.status.from ? ` according to ${r.status.from}` : ` in ${fix.label}`}${r.status.label ? ` (“${r.status.label}”)` : ""}`, r.status.replacedBy ? [", replaced by ", h("a", { href: r.status.replacedBy, target: "_blank", rel: "noopener" }, r.status.replacedBy.split("/").pop())] : "", ". Unticked by default; removing a statement can't be undone from here."]))),
       h("h3", {}, "QuickStatements"),
       textarea,
       h("div", { class: "actions" },

@@ -2,7 +2,7 @@
 
 **koetai reconciliator** reconciles entities across linked-data sources into one RDF graph per entity, and publishes the result as a static site with no server. It's a GitHub template, so anyone can run their own instance.
 
-It covers scholarly entities and ontology terms. Each page (a researcher, a work, a topic or a venue) is one RDF graph, merged in your visitors' browsers from **Wikidata, ORCID, Crossref, DataCite, OpenAlex and OBO ontologies (via OLS)**, with every terminology code checked in OLS, and queried with [Comunica](https://comunica.dev). GitHub Pages hosts the site, and a GitHub Action keeps pre-built snapshots of the pages you feature. You add your own visualizations as a SPARQL query plus a few lines of config.
+It covers scholarly entities and ontology terms. Each page (a researcher, a work, a topic or a venue) is one RDF graph, merged in your visitors' browsers from **Wikidata, ORCID, Crossref, DataCite, OpenAlex, OBO ontologies (via OLS) and [RDF Portal](https://rdfportal.org)**, with every terminology code checked in OLS, and queried with [Comunica](https://comunica.dev). GitHub Pages hosts the site, and a GitHub Action keeps pre-built snapshots of the pages you feature. You add your own visualizations as a SPARQL query plus a few lines of config.
 
 Inspired by [Scholia](https://github.com/WDscholia/scholia). The aim is to go native on RDF and go beyond Wikidata: the same adapter → reconcile → query pipeline is meant to extend to other domains and terminologies, OBO Foundry ontologies are the first: an ontology term's page reconciles its cross-references to SNOMED CT, MeSH, ICD-9/10/11, UMLS and others against Wikidata. (Developed under the working names frugalScholia and koetai-bibliography.)
 
@@ -118,25 +118,28 @@ Any OBO Foundry term has a page: search by name (results come from Wikidata and 
 
 1. **The ontology.** The `obo` adapter (`src/adapters/obo.js`) reads the term from EBI's Ontology Lookup Service: label, definition, synonyms with their OBO scope, obsolete status, is-a parents and children, and the term's cross-references.
 2. **Wikidata.** The item is found through the ontology's own Wikidata property (P5270 MONDO, P699 DOID, P686 GO, P3841 HPO, …) or P2888 exact match. If none carries the term's ID, the item that shares the most of the term's exact cross-references is used, and the page shows which codes matched.
-3. **Mappings.** Codes from both sources are turned into the same IRIs (`src/vocab.js`), for example `http://snomed.info/id/44054006` or `http://id.nlm.nih.gov/mesh/D003924`. Where two sources give the same code, they meet on one node.
+3. **TogoID (RDF Portal).** The `rdfportal` adapter (`src/adapters/rdfportal.js`) reads the term's links in [TogoID](https://togoid.dbcls.jp), DBCLS's ID-link dataset, from RDF Portal's SPARQL endpoint. TogoID's "is equivalent to" becomes an `exact` mapping, and "is nearly equivalent to" a `close` one.
+4. **Mappings.** Codes from all sources are turned into the same IRIs (`src/vocab.js`), for example `http://snomed.info/id/44054006` or `http://id.nlm.nih.gov/mesh/D003924`. Where two sources give the same code, they meet on one node.
 
 The term page shows:
 - **Agreement between sources:** per terminology, how many codes both sources give, and how many only one does.
-- **Mappings to other terminologies:** each code with its relation (`exact` for an exact match or Wikidata external ID, `xref` for a plain database cross-reference), source badges, and what OLS says about it (see below).
+- **Mappings to other terminologies:** each code with its relation (`exact` for an exact match, a Wikidata external ID or TogoID equivalence, `close` for TogoID near-equivalence, `xref` for a plain database cross-reference), source badges, and the concept check (see below).
 - The parents, children and synonyms, plus works about the term on Wikidata (the newest 1,000).
 
-Example: for type 2 diabetes (`MONDO:0005148`), MONDO and Wikidata agree on DOID, ICD-10, ICD-11, MeSH, NCIt and UMLS. But Wikidata's MONDO ID for the item points to an obsolete term, and MONDO's SNOMED CT code is not on Wikidata.
+Example: for type 2 diabetes (`MONDO:0005148`), MONDO and Wikidata agree on DOID, ICD-10, ICD-11, MeSH, NCIt and UMLS, and TogoID confirms DOID, MeSH, OMIM, UMLS and NANDO. But Wikidata's MONDO ID for the item points to an obsolete term, and MONDO's SNOMED CT code is not on Wikidata.
 
-### Concept check through EBI's OLS
+### Concept check through EBI's OLS and RDF Portal
 
-Every code a term or topic page maps to, whether it comes from the ontology or from a Wikidata external ID, is looked up in [EBI's Ontology Lookup Service](https://www.ebi.ac.uk/ols4/) (`src/adapters/ols.js`, graph `urn:koetai-reconciliator:source:ols`). The mappings table shows its name in OLS and its status:
+Every code a term or topic page maps to, whether it comes from the ontology or from a Wikidata external ID, is looked up in [EBI's Ontology Lookup Service](https://www.ebi.ac.uk/ols4/) (`src/adapters/ols.js`, graph `urn:koetai-reconciliator:source:ols`). NANDO codes, which OLS doesn't have, are looked up in NANDO on RDF Portal instead. The mappings table shows the code's name there, its status, and which service checked it:
 
 - **current**: OLS has the code and it is in use.
 - **obsolete**: OLS marks it obsolete, with its replacement where the ontology gives one.
 - **not found**: OLS loads that terminology but has no such code (often a typo or a retired code on Wikidata).
 - **empty**: not checked, because OLS does not cover the terminology (ICD, OMIM, …).
 
-OLS covers all OBO ontologies it loads, SNOMED CT, MeSH, Orphanet (ORDO) and EFO under the same IRIs this site uses. UMLS CUIs are checked through MedGen, which reuses them; a CUI that MedGen lacks is left unchecked. Codes of OBO ontologies that OLS doesn't load (such as NANDO) are left unchecked as well.
+OLS covers all OBO ontologies it loads, SNOMED CT, MeSH, Orphanet (ORDO) and EFO under the same IRIs this site uses. UMLS CUIs are checked through MedGen, which reuses them; a CUI that MedGen lacks is left unchecked. Codes of other OBO ontologies that OLS doesn't load are left unchecked as well. NANDO names show the English and Japanese label, for example "Diabetes mellitus type 2 (2型糖尿病)".
+
+If OLS is slow or down, each request times out after 12 seconds. After three failures in a row, the check stops and the page log says "OLS unavailable", so the page still appears.
 
 Wikidata topic pages that carry such codes get the same checked mappings panel. Topic pages without codes don't show it.
 
@@ -154,7 +157,7 @@ Additions are referenced with stated in (S248) the ontology's Wikidata item (MON
 
 For type 2 diabetes (`MONDO:0005148`) the panel proposes adding MONDO_0005148 and SNOMED CT 44054006 to Q3025883, and offers to remove MONDO_0015887 ("obsolete rare diabetes mellitus type 2").
 
-Supported terminologies: SNOMED CT, MeSH, ICD-9-CM, ICD-10, ICD-10-CM, ICD-11, UMLS, OMIM, Orphanet, MedGen, and OBO ontologies (MONDO, DOID, HPO, GO, NCIt, UBERON, CL, ChEBI, NCBITaxon, SO, ENVO; other OBO prefixes get PURLs, anything else a [Bioregistry](https://bioregistry.io) IRI). Add one in `VOCABS` in `src/vocab.js`.
+Supported terminologies: SNOMED CT, MeSH, ICD-9-CM, ICD-10, ICD-10-CM, ICD-11, UMLS, OMIM, Orphanet, MedGen, NANDO, and OBO ontologies (MONDO, DOID, HPO, GO, NCIt, UBERON, CL, ChEBI, NCBITaxon, SO, ENVO; other OBO prefixes get PURLs, anything else a [Bioregistry](https://bioregistry.io) IRI). Add one in `VOCABS` in `src/vocab.js`.
 
 ## How it works
 
@@ -167,7 +170,8 @@ DataCite  ── REST API (Zenodo, figshare, arXiv, …)   ├─► reconcile (
 OpenAlex  ── REST API (authors, venues, topics,      │   ORCID / DOI / OBO term / QID / ISSN / OpenAlex id;
               citing works)                          │   codes in other terminologies stay mappings (src/vocab.js)
 OBO       ── OLS4 API (terms, hierarchy, xrefs)      │
-OLS check ── OLS4 API (status of every mapped code)  ┘                         │
+OLS check ── OLS4 API (status of every mapped code)  │
+RDF Portal── SPARQL (TogoID links, NANDO check)      ┘                         │
                                                               one merged N-Quads graph per entity
                                                        ┌───────────────────────┴───────────────────┐
                                         GitHub Action → data/**/*.nq.gz              browser → harvested live
@@ -189,8 +193,8 @@ Everything is mapped to [schema.org](https://schema.org). Each source writes to 
 | Venue | `schema:Periodical`, `schema:name`, `schema:issn` |
 | Topic | Wikidata items and OpenAlex topics (`schema:DefinedTerm`), `schema:name` |
 | Ontology term | `schema:DefinedTerm`, `schema:termCode`, `schema:inDefinedTermSet`, `rdfs:subClassOf`, `oboInOwl:has…Synonym`, `owl:deprecated` |
-| Mapping | `skos:exactMatch` or `oboInOwl:hasDbXref` to a code node with `kr:vocabulary` and `kr:code` |
-| OLS check | on the code node: `kr:olsStatus` (`current`, `obsolete`, `not found`), `kr:olsName`, `kr:olsOntology`, `obo:IAO_0100001` (replaced by) |
+| Mapping | `skos:exactMatch`, `skos:closeMatch` or `oboInOwl:hasDbXref` to a code node with `kr:vocabulary` and `kr:code` |
+| Concept check | on the code node, in the checker's graph (`ols` or `rdfportal`): `kr:checkStatus` (`current`, `obsolete`, `not found`), `kr:checkedName`, `kr:checkedOntology`, `obo:IAO_0100001` (replaced by) |
 | Identity | `schema:sameAs` to `https://orcid.org/…`, `https://doi.org/…`, `http://www.wikidata.org/entity/Q…`, `urn:issn:…`, `https://openalex.org/…`, `http://purl.obolibrary.org/obo/…` |
 | Extras | `kr:citedByCount`, `kr:authorship` → `kr:agent` + `kr:position` (author order), where `kr:` = `urn:koetai-reconciliator:vocab:` |
 
@@ -226,6 +230,7 @@ Write `src/adapters/<name>.js` returning quads in graph `urn:koetai-reconciliato
 - **Terminology pages:** only OBO terms have their own pages. SNOMED CT, MeSH and ICD codes are shown as mappings and link out. OLS checks SNOMED CT and MeSH codes, but they don't have pages of their own yet. Term pages show only the newest 1,000 works about the term from Wikidata.
 - **Language and search:** labels are English only, and name search uses Wikidata's search API.
 - **Large pages:** a journal page (about 120k quads) takes several seconds to query in the browser.
+- **RDF Portal:** only TogoID and NANDO are used, on term pages. RDF Portal's PubMed, PubTator, MeSH and MedGen data are not used yet. Its Virtuoso endpoints time out on open-ended patterns, so queries stay anchored on known IRIs. Requests time out after 30 seconds.
 - **Tests:** there are no automated tests yet. Behaviour was checked by hand with `npm run check` and in a browser.
 
 ## AI acknowledgement
@@ -236,7 +241,7 @@ This project was developed with substantial help from generative AI, as recommen
 - **What the AI did:**
   - proposed the architecture: source adapters → schema.org named graphs → reconciliation → Comunica over static or live graphs, packaged as a configurable template;
   - wrote the code, SPARQL queries, GitHub workflow and this README;
-  - probed the Wikidata, QLever, ORCID, Crossref, DataCite, OpenAlex and OLS APIs to confirm formats, CORS and rate limits;
+  - probed the Wikidata, QLever, ORCID, Crossref, DataCite, OpenAlex, OLS and RDF Portal APIs to confirm formats, CORS and rate limits;
   - ran the manual tests described above.
 - **What the human did:** set the goals (a frugal Scholia that lives on GitHub, uses Comunica, is native RDF across Wikidata, ORCID, Crossref and further sources, and can be reused as a template), steered the design, and is responsible for reviewing, maintaining and publishing the code.
 - **Verification:** the AI-generated code was tested by hand against live data. It has no automated test suite and has not had an independent line-by-line review, so treat it as a prototype.

@@ -6,39 +6,39 @@
       "iri": "https://orcid.org/0000-0002-9593-2294",
       "file": "data/author/wikidata_Q18618629.nq.gz",
       "quads": 2854,
-      "bytes": 30617,
-      "generated": "2026-11-17T17:52:40.743Z",
+      "bytes": 30436,
+      "generated": "2026-11-18T07:41:04.407Z",
       "endpoint": "https://qlever.dev/api/wikidata",
       "log": [
         {
           "source": "wikidata",
           "what": "author neighbourhood",
           "quads": 1369,
-          "ms": 436
-        },
-        {
-          "source": "datacite",
-          "what": "works with this ORCID",
-          "quads": 0,
-          "ms": 253
+          "ms": 1724
         },
         {
           "source": "orcid",
           "what": "record and works",
           "quads": 10,
-          "ms": 279
+          "ms": 631
         },
         {
-          "source": "openalex",
-          "what": "works by this author",
-          "quads": 2336,
-          "ms": 952
+          "source": "datacite",
+          "what": "works with this ORCID",
+          "quads": 0,
+          "ms": 635
         },
         {
           "source": "crossref",
           "what": "works with this ORCID",
           "quads": 60,
-          "ms": 2838
+          "ms": 1042
+        },
+        {
+          "source": "openalex",
+          "what": "works by this author",
+          "quads": 2336,
+          "ms": 2029
         }
       ]
     },
@@ -48,51 +48,51 @@
       "iri": "https://orcid.org/0000-0001-9488-1870",
       "file": "data/author/orcid_0000-0001-9488-1870.nq.gz",
       "quads": 32330,
-      "bytes": 307729,
-      "generated": "2026-11-17T17:52:49.257Z",
+      "bytes": 307990,
+      "generated": "2026-11-18T07:41:13.258Z",
       "endpoint": "https://qlever.dev/api/wikidata",
       "log": [
         {
           "source": "wikidata",
           "what": "author neighbourhood",
           "quads": 6826,
-          "ms": 943
+          "ms": 1526
         },
         {
           "source": "datacite",
           "what": "works with this ORCID",
           "quads": 6925,
-          "ms": 720
-        },
-        {
-          "source": "orcid",
-          "what": "record and works",
-          "quads": 1295,
-          "ms": 899
-        },
-        {
-          "source": "openalex",
-          "what": "works by this author",
-          "quads": 15572,
-          "ms": 1711
+          "ms": 849
         },
         {
           "source": "crossref",
           "what": "works with this ORCID",
           "quads": 5911,
-          "ms": 3195
+          "ms": 854
+        },
+        {
+          "source": "orcid",
+          "what": "record and works",
+          "quads": 1295,
+          "ms": 990
+        },
+        {
+          "source": "openalex",
+          "what": "works by this author",
+          "quads": 15572,
+          "ms": 3902
         },
         {
           "source": "crossref",
           "what": "141 more DOIs from ORCID",
           "quads": 270,
-          "ms": 1611
+          "ms": 487
         },
         {
           "source": "datacite",
           "what": "135 more DOIs from ORCID",
           "quads": 3617,
-          "ms": 955
+          "ms": 1642
         }
       ]
     },
@@ -102,33 +102,33 @@
       "iri": "https://doi.org/10.1145/2629489",
       "file": "data/work/doi_10.1145_2629489.nq.gz",
       "quads": 6518,
-      "bytes": 103073,
-      "generated": "2026-11-17T17:52:51.654Z",
+      "bytes": 102885,
+      "generated": "2026-11-18T07:41:20.557Z",
       "endpoint": "https://qlever.dev/api/wikidata",
       "log": [
         {
           "source": "wikidata",
           "what": "work neighbourhood",
           "quads": 5581,
-          "ms": 902
+          "ms": 3537
         },
         {
           "source": "datacite",
           "what": "work and relations",
           "quads": 0,
-          "ms": 41
-        },
-        {
-          "source": "openalex",
-          "what": "work, references, citing works",
-          "quads": 907,
-          "ms": 1222
+          "ms": 2272
         },
         {
           "source": "crossref",
           "what": "work and references",
           "quads": 36,
-          "ms": 1326
+          "ms": 2757
+        },
+        {
+          "source": "openalex",
+          "what": "work, references, citing works",
+          "quads": 907,
+          "ms": 3399
         }
       ]
     },
@@ -139,14 +139,14 @@
       "file": "data/topic/wikidata_Q2013.nq.gz",
       "quads": 15735,
       "bytes": 214955,
-      "generated": "2026-11-17T17:52:53.905Z",
+      "generated": "2026-11-18T07:41:32.441Z",
       "endpoint": "https://qlever.dev/api/wikidata",
       "log": [
         {
           "source": "wikidata",
           "what": "topic neighbourhood",
           "quads": 20770,
-          "ms": 2034
+          "ms": 11511
         }
       ]
     },
@@ -155,28 +155,28 @@
       "aspect": "venue",
       "iri": "http://www.wikidata.org/entity/Q27725928",
       "file": "data/venue/issn_2052-4463.nq.gz",
-      "quads": 125840,
-      "bytes": 1302296,
-      "generated": "2026-11-17T17:53:06.347Z",
+      "quads": 125883,
+      "bytes": 1302252,
+      "generated": "2026-11-18T07:41:44.654Z",
       "endpoint": "https://qlever.dev/api/wikidata",
       "log": [
         {
           "source": "wikidata",
           "what": "venue neighbourhood",
           "quads": 67766,
-          "ms": 3993
+          "ms": 6782
+        },
+        {
+          "source": "crossref",
+          "what": "journal and recent works",
+          "quads": 30495,
+          "ms": 1309
         },
         {
           "source": "openalex",
           "what": "source and recent works",
           "quads": 44974,
-          "ms": 3906
-        },
-        {
-          "source": "crossref",
-          "what": "journal and recent works",
-          "quads": 30447,
-          "ms": 5632
+          "ms": 4668
         }
       ]
     },
@@ -185,16 +185,16 @@
       "aspect": "term",
       "iri": "http://purl.obolibrary.org/obo/MONDO_0005148",
       "file": "data/term/obo_MONDO_0005148.nq.gz",
-      "quads": 15248,
-      "bytes": 220230,
-      "generated": "2026-11-17T17:53:09.218Z",
+      "quads": 15266,
+      "bytes": 220418,
+      "generated": "2026-11-18T07:42:03.603Z",
       "endpoint": "https://qlever.dev/api/wikidata",
       "log": [
         {
           "source": "obo",
           "what": "term, hierarchy and cross-references (OLS)",
           "quads": 135,
-          "ms": 331
+          "ms": 5406
         },
         {
           "source": "reconcile",
@@ -206,13 +206,25 @@
           "source": "wikidata",
           "what": "term neighbourhood",
           "quads": 21012,
-          "ms": 1561
+          "ms": 6573
+        },
+        {
+          "source": "rdfportal",
+          "what": "TogoID links",
+          "quads": 15,
+          "ms": 1329
+        },
+        {
+          "source": "rdfportal",
+          "what": "NANDO codes checked",
+          "quads": 3,
+          "ms": 977
         },
         {
           "source": "ols",
           "what": "codes checked in OLS",
           "quads": 24,
-          "ms": 317
+          "ms": 3080
         }
       ]
     }
@@ -230,5 +242,5 @@
     "openalex:C2777180221": "obo:MONDO_0005148",
     "openalex:C2910068830": "obo:MONDO_0005148"
   },
-  "generated": "2026-11-17T17:53:09.220Z"
+  "generated": "2026-11-18T07:42:03.605Z"
 }

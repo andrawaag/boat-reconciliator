@@ -26,6 +26,8 @@ export const VOCABS = {
   OMIM: { label: "OMIM", iri: (id) => `https://omim.org/entry/${id}`, wd: "P492", aliases: ["MIM", "OMIMPS"] },
   ORPHANET: { label: "Orphanet", iri: (id) => `http://www.orpha.net/ORDO/Orphanet_${id}`, wd: "P1550", aliases: ["ORPHA", "ORDO", "Orphanet"] },
   MEDGEN: { label: "MedGen", iri: (id) => `https://www.ncbi.nlm.nih.gov/medgen/${id}` },
+  // Japanese rare-disease ontology (NanbyoData); not in OLS, checked through RDF Portal (src/adapters/rdfportal.js).
+  NANDO: { label: "NANDO", iri: (id) => `http://nanbyodata.jp/ontology/NANDO_${id}` },
   // OBO Foundry ontologies with a Wikidata property.
   MONDO: { label: "MONDO", iri: obo("MONDO"), wd: "P5270", wdForms: (id) => [`MONDO_${id}`, `MONDO:${id}`], wdItem: "Q27468140" },
   DOID: { label: "Disease Ontology", iri: obo("DOID"), wd: "P699", wdForms: (id) => [`DOID:${id}`], wdItem: "Q5282129" },
@@ -70,6 +72,10 @@ export function target(prefix, id) {
 export function parseTargetIri(iriString) {
   const rules = [
     [/^http:\/\/purl\.obolibrary\.org\/obo\/([A-Za-z]+)_(\w+)$/, (m) => [m[1], m[2]]],
+    [/^http:\/\/nanbyodata\.jp\/ontology\/NANDO_(\d+)$/, (m) => ["NANDO", m[1]]],
+    // MedGen concept IDs that look like CUIs are UMLS CUIs (TogoID writes them this way); numeric ones are MedGen UIDs.
+    [/^https?:\/\/identifiers\.org\/medgen[/:](C\d+)$/, (m) => ["UMLS", m[1]]],
+    [/^https?:\/\/identifiers\.org\/mesh[/:](\w+)$/, (m) => ["MESH", m[1]]],
     [/^https?:\/\/identifiers\.org\/([\w.]+)[/:](.+)$/, (m) => [m[1], m[2]]],
     [/^http:\/\/purl\.bioontology\.org\/ontology\/(\w+)\/(.+)$/, (m) => [m[1], m[2]]],
     [/^http:\/\/linkedlifedata\.com\/resource\/umls\/id\/(\w+)$/, (m) => ["UMLS", m[1]]],
@@ -84,11 +90,11 @@ export function parseTargetIri(iriString) {
   return null;
 }
 
-/** Emit a mapping from `subject` to the code prefix:id. `relation` is "exact" or "xref". Returns the target IRI. */
+/** Emit a mapping from `subject` to the code prefix:id. `relation` is "exact", "close" or "xref". Returns the target IRI. */
 export function addMapping(sink, subject, prefix, id, relation) {
   const t = target(prefix, id);
   if (!t || t.iri === subject) return null;
-  sink.add(subject, relation === "exact" ? SKOS + "exactMatch" : OBOINOWL + "hasDbXref", t.iri);
+  sink.add(subject, relation === "exact" ? SKOS + "exactMatch" : relation === "close" ? SKOS + "closeMatch" : OBOINOWL + "hasDbXref", t.iri);
   sink.lit(t.iri, NS.kr + "vocabulary", t.vocabulary);
   sink.lit(t.iri, NS.kr + "code", t.code);
   return t.iri;
