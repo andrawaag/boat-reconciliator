@@ -12,7 +12,7 @@ export const NS = {
   kr: "urn:koetai-reconciliator:vocab:",
 };
 
-export const SOURCES = ["wikidata", "orcid", "crossref", "datacite", "openalex", "obo", "ols", "rdfportal"];
+export const SOURCES = ["wikidata", "orcid", "crossref", "datacite", "openalex", "obo", "ols", "rdfportal", "pubmed"];
 export const graphFor = (source) => `urn:koetai-reconciliator:source:${source}`;
 
 export const iri = {
@@ -22,6 +22,7 @@ export const iri = {
   issn: (i) => `urn:issn:${i.trim().toUpperCase()}`,
   openalex: (id) => `https://openalex.org/${id.toUpperCase()}`,
   obo: (id) => `http://purl.obolibrary.org/obo/${id}`,
+  pmid: (id) => `http://rdf.ncbi.nlm.nih.gov/pubmed/${id}`,
 };
 // OBO prefixes keep their case convention: upper case, except a few mixed-case ones.
 const OBO_CASE = { ncbitaxon: "NCBITaxon" };
@@ -33,6 +34,8 @@ const PATTERNS = [
   ["doi", /^(?:doi:|https?:\/\/(?:dx\.)?doi\.org\/)?(10\.\d{4,9}\/\S+)$/i, (m) => m[1].toLowerCase()],
   ["issn", /^(?:issn:|urn:issn:)?(\d{4}-\d{3}[\dX])$/i, (m) => m[1].toUpperCase()],
   ["openalex", /^(?:openalex:|https?:\/\/(?:api\.)?openalex\.org\/(?:\w+\/)?)?([WASTC]\d{3,})$/i, (m) => m[1].toUpperCase()],
+  // PubMed: "pmid:26978244", a PubMed URL or the PubMed RDF IRI. A bare number is not taken as a PMID.
+  ["pmid", /^(?:pmid:\s*|https?:\/\/(?:pubmed\.ncbi\.nlm\.nih\.gov|rdf\.ncbi\.nlm\.nih\.gov\/pubmed)\/)(\d{1,9})\/?$/i, (m) => m[1]],
   // OBO term: "obo:MONDO_0005148", "MONDO:0005148" or the PURL.
   ["obo", /^(?:obo:|https?:\/\/purl\.obolibrary\.org\/obo\/)?([A-Za-z][A-Za-z]{1,15})[_:](\d{4,}|[A-Z]?\d{3,})$/, (m) => `${oboPrefix(m[1])}_${m[2]}`],
 ];
@@ -57,7 +60,7 @@ export const iriToKey = (i) => (/^(https?:|urn:issn:)/.test(i) ? parseKey(i) : n
 const OPENALEX_ASPECT = { A: "author", W: "work", S: "venue", T: "topic", C: "topic" };
 export function aspectForKey({ scheme, value }) {
   if (scheme === "openalex") return OPENALEX_ASPECT[value[0]];
-  return { orcid: "author", doi: "work", issn: "venue", obo: "term" }[scheme];
+  return { orcid: "author", doi: "work", pmid: "work", issn: "venue", obo: "term" }[scheme];
 }
 
 /** Normalise a partial date to an RDF literal: xsd:date, xsd:gYearMonth or xsd:gYear. */

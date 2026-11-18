@@ -5,8 +5,9 @@
 //     author name string (P2093), as the Author Disambiguator tool would.
 // Commands are QuickStatements V1, run by the visitor under their own Wikimedia account.
 
-import { findByStatementsLive } from "./wikidata-live.js";
+import { findByStatementsLive, propertyValuesLive } from "./wikidata-live.js";
 
+const PUBMED_ITEM = "Q180686"; // "stated in" PubMed, for PubMed IDs (P698)
 const SOURCE_ITEM = { crossref: "Q5188229", datacite: "Q821542", openalex: "Q107507571", orcid: "Q51044" };
 const SOURCE_PREF = ["crossref", "datacite", "openalex"];
 // Work type -> Wikidata class (P31). Crossref type, then OpenAlex type, then the schema.org class DataCite gives.
@@ -69,6 +70,7 @@ export async function gatherMissingWorks(run, authorIri) {
       p31: p31For(b.get("workTypes")?.value ?? "", b.get("classes")?.value ?? ""),
       venueQid: qidOf(venue), venueIssn: b.get("venueIssn")?.value ?? null, authors,
       myPosition: authors.find((a) => a.isMe)?.pos ?? null,
+      pmid: b.get("pmid")?.value ?? null, // from PubMed via RDF Portal
     });
   }
   works.sort((a, z) => z.date.localeCompare(a.date));
@@ -103,12 +105,27 @@ export async function checkOnWikidata(engine, endpoint, found, fetchFn = globalT
   }
   // DOIs the SPARQL copy doesn't know may be on items created since its last update (e.g. by an earlier batch from
   // this panel): check them with Wikidata's live search so they are never proposed for creation twice.
+  // An item may also carry the work's PubMed ID without its DOI: look those up too, so it isn't created twice.
+  const byPmid = new Map(found.works.filter((w) => w.pmid && !w.existing).map((w) => [w.pmid, w]));
+  for (const batch of chunks([...byPmid.keys()], 100)) {
+    for (const r of await select(`SELECT ?item ?pmid WHERE { VALUES ?pmid { ${batch.map(lit).join(" ")} } ?item wdt:P698 ?pmid }`)) {
+      const w = byPmid.get(r.get("pmid").value);
+      if (w && !w.existing) w.existing = { qid: qidOf(r.get("item").value), nameStrings: [], byPmid: true };
+    }
+  }
   const unknown = found.works.filter((w) => !w.existing);
-  for (const hit of await findByStatementsLive(fetchFn, unknown.map((w) => ({ property: "P356", value: w.doi.toUpperCase() })))) {
-    const w = byDoi.get(hit.value.toUpperCase());
-    if (w && !w.existing) w.existing = { qid: hit.qid, nameStrings: [], live: true };
+  const livePairs = unknown.flatMap((w) => [{ property: "P356", value: w.doi.toUpperCase() }, w.pmid ? { property: "P698", value: w.pmid } : null].filter(Boolean));
+  for (const hit of await findByStatementsLive(fetchFn, livePairs)) {
+    const w = hit.property === "P698" ? unknown.find((x) => x.pmid === hit.value) : byDoi.get(hit.value.toUpperCase());
+    if (w && !w.existing) w.existing = { qid: hit.qid, nameStrings: [], live: true, byPmid: hit.property === "P698" };
   }
   const existing = found.works.filter((w) => w.existing);
+  // The SPARQL copy lags: an author statement added minutes ago (e.g. by an earlier batch from this panel) must not
+  // be proposed again. Read the items' author statements live.
+  if (found.authorQid && existing.length) {
+    const held = await propertyValuesLive(fetchFn, existing.map((w) => w.existing.qid), "P50").catch(() => new Map());
+    for (const w of existing) if (held.get(w.existing.qid)?.has(found.authorQid.toUpperCase())) w.existing.linked = true;
+  }
   for (const batch of chunks(existing, 100)) {
     const byQid = new Map(batch.map((w) => [w.existing.qid, w]));
     const rows = await select(`SELECT ?item ?name ?ord WHERE { VALUES ?item { ${batch.map((w) => `wd:${w.existing.qid}`).join(" ")} } ?item p:P2093 ?st . ?st ps:P2093 ?name . OPTIONAL { ?st pq:P1545 ?ord } }`);
@@ -159,7 +176,7 @@ export function buildWorkCommands(found, chosen, { removeNameStrings = true, lan
     if (!chosen.has(w.doi)) continue;
     const ref = [SOURCE_ITEM[w.source] ? `S248\t${SOURCE_ITEM[w.source]}` : null, `S854\t"https://doi.org/${clean(w.doi)}"`, `S813\t+${today}T00:00:00Z/11`].filter(Boolean).join("\t");
     if (w.existing) {
-      if (!found.authorQid) continue; // link and claimed both need the author's item
+      if (!found.authorQid || w.existing.linked) continue; // link and claimed both need the author's item
       const me = w.authors.find((a) => a.isMe);
       const ordinal = w.myPosition ? `\tP1545\t"${w.myPosition}"` : "";
       const statedAs = me?.name ? `\tP1932\t"${clean(me.name)}"` : "";
@@ -174,6 +191,7 @@ export function buildWorkCommands(found, chosen, { removeNameStrings = true, lan
     lines.push(`LAST\tP31\t${w.p31}\t${ref}`);
     lines.push(`LAST\tP1476\t${language}:"${title}"\t${ref}`);
     lines.push(`LAST\tP356\t"${clean(w.doi.toUpperCase())}"\t${ref}`);
+    if (w.pmid) lines.push(`LAST\tP698\t"${clean(w.pmid)}"\tS248\t${PUBMED_ITEM}\tS854\t"https://pubmed.ncbi.nlm.nih.gov/${clean(w.pmid)}/"\tS813\t+${today}T00:00:00Z/11`);
     const t = timeValue(w.date);
     if (t) lines.push(`LAST\tP577\t${t}\t${ref}`);
     if (w.venueQid) lines.push(`LAST\tP1433\t${w.venueQid}\t${ref}`);
@@ -188,6 +206,7 @@ export function buildWorkCommands(found, chosen, { removeNameStrings = true, lan
 /** Which bucket a checked work is in. */
 export function workStatus(found, w) {
   // On Wikidata already: "link" when the work's author list names this author; "claimed" when only their ORCID record lists it.
+  if (w.existing?.linked) return "linked"; // the item already names this author (seen live)
   if (w.existing) return !found.authorQid ? "link-blocked" : w.myPosition ? "link" : "claimed";
   if (!w.title || !w.p31) return "unsupported";
   if (!w.authors.some((a) => a.isMe)) return "no-authors"; // never create an item without its author list

@@ -75,3 +75,41 @@ export async function entityQuadsLive(fetchFn, DF, qid) {
   }
   return quads;
 }
+
+/**
+ * The values an item holds for these properties, read live (so statements added minutes ago count):
+ * Map property -> Set of upper-cased values. Used to propose only statements the item doesn't have yet.
+ */
+export async function claimValuesLive(fetchFn, qid, properties) {
+  const res = await api(fetchFn, { action: "wbgetentities", ids: qid, props: "claims" });
+  const claims = res?.entities?.[qid]?.claims ?? {};
+  const out = new Map();
+  for (const p of new Set(properties)) {
+    const values = new Set();
+    for (const c of claims[p] ?? []) {
+      const v = c.mainsnak?.datavalue?.value;
+      if (typeof v === "string") values.add(v.toUpperCase());
+      else if (v?.id) values.add(v.id.toUpperCase());
+    }
+    out.set(p, values);
+  }
+  return out;
+}
+
+/** For many items: Map qid -> Set of upper-cased values of one property, read live (50 items per request). */
+export async function propertyValuesLive(fetchFn, qids, property) {
+  const out = new Map();
+  const ids = [...new Set(qids)];
+  for (let i = 0; i < ids.length; i += 50) {
+    const res = await api(fetchFn, { action: "wbgetentities", ids: ids.slice(i, i + 50).join("|"), props: "claims" });
+    for (const [qid, e] of Object.entries(res?.entities ?? {})) {
+      const values = new Set();
+      for (const c of e.claims?.[property] ?? []) {
+        const v = c.mainsnak?.datavalue?.value;
+        if (typeof v === "string") values.add(v.toUpperCase()); else if (v?.id) values.add(v.id.toUpperCase());
+      }
+      out.set(qid, values);
+    }
+  }
+  return out;
+}

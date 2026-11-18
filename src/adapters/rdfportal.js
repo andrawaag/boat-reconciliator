@@ -16,9 +16,10 @@ const TOGOID_GRAPHS = "http://rdfportal.org/dataset/togoid/relation/";
 const NANDO_GRAPH = "http://nanbyodata.jp/ontology/nando";
 const safeIri = (s) => /^https?:\/\/[^\s<>"{}|\\^`]+$/.test(s);
 
-async function select(ctx, query) {
+/** SELECT on an RDF Portal endpoint ("primary", "ncbi", …), returning SPARQL JSON bindings. */
+export async function rdfPortalSelect(ctx, query, endpoint = RDFPORTAL_SPARQL) {
   for (let attempt = 0; ; attempt++) {
-    const res = await ctx.fetch(RDFPORTAL_SPARQL, {
+    const res = await ctx.fetch(endpoint, {
       method: "POST",
       headers: { Accept: "application/sparql-results+json", "Content-Type": "application/x-www-form-urlencoded", ...ctx.headers },
       body: new URLSearchParams({ query }).toString(),
@@ -34,7 +35,7 @@ async function select(ctx, query) {
 export async function harvestTogoid(ctx, subject, termIri) {
   if (!safeIri(termIri)) return [];
   const out = quadSink(ctx.DF, "rdfportal");
-  const rows = await select(ctx, `SELECT DISTINCT ?x ?p ?g WHERE {
+  const rows = await rdfPortalSelect(ctx, `SELECT DISTINCT ?x ?p ?g WHERE {
   VALUES ?p { <${TIO}TIO_000001> <${TIO}TIO_000002> }
   { GRAPH ?g { ?x ?p <${termIri}> } } UNION { GRAPH ?g { <${termIri}> ?p ?x } }
   FILTER(STRSTARTS(STR(?g), "${TOGOID_GRAPHS}"))
@@ -58,7 +59,7 @@ export async function checkNando(ctx, nandoIris) {
   const iris = [...new Set(nandoIris)].filter((i) => safeIri(i) && i.startsWith("http://nanbyodata.jp/ontology/NANDO_"));
   const out = quadSink(ctx.DF, "rdfportal");
   if (!iris.length) return out.quads;
-  const rows = await select(ctx, `SELECT ?c ?label ?lang ?dep WHERE {
+  const rows = await rdfPortalSelect(ctx, `SELECT ?c ?label ?lang ?dep WHERE {
   VALUES ?c { ${iris.map((i) => `<${i}>`).join(" ")} }
   GRAPH <${NANDO_GRAPH}> { ?c a ?type OPTIONAL { ?c <http://www.w3.org/2000/01/rdf-schema#label> ?label BIND(LANG(?label) AS ?lang) } OPTIONAL { ?c <http://www.w3.org/2002/07/owl#deprecated> ?dep } }
 }`);

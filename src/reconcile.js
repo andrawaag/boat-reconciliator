@@ -1,11 +1,12 @@
 // Merges nodes that different sources describe under different IRIs, using schema:sameAs links.
-// Canonical IRI per cluster: ORCID > DOI > OBO term > Wikidata > ISSN > OpenAlex > anything else. sameAs links are kept for provenance.
+// Canonical IRI per cluster: ORCID > DOI > PMID > OBO term > Wikidata > ISSN > OpenAlex > anything else. sameAs links are kept for provenance.
 import { NS } from "./model.js";
 const SAME_AS = NS.schema + "sameAs";
 
 function rank(i) {
   if (i.startsWith("https://orcid.org/")) return 0;
   if (i.startsWith("https://doi.org/")) return 1;
+  if (i.startsWith("http://rdf.ncbi.nlm.nih.gov/pubmed/")) return 1.2;
   if (i.startsWith("http://purl.obolibrary.org/obo/")) return 1.5;
   if (i.startsWith(NS.wd)) return 2;
   if (i.startsWith("urn:issn:")) return 3;
@@ -49,7 +50,7 @@ export function reconcile(DF, quads) {
 // DataCite), OpenAlex author ids, Wikidata items. Within one (already merged) work, join authors whose names
 // match: exact normalised full name between two identified authors, or also family name + first initial
 // when one side is only a per-work URN. Matching never crosses works, so namesakes on different papers stay apart.
-const isAnon = (i) => /^urn:koetai-reconciliator:(crossref|datacite|openalex)-author:/.test(i);
+const isAnon = (i) => /^urn:koetai-reconciliator:(crossref|datacite|openalex|pubmed)-author:/.test(i);
 const norm = (n) => n.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z\s-]/g, " ").replace(/-/g, " ").replace(/\s+/g, " ").trim();
 const fullKey = (n) => norm(n);
 const initialKey = (n) => { const p = norm(n).split(" ").filter(Boolean); return p.length > 1 ? `${p[0][0]} ${p.at(-1)}` : null; };

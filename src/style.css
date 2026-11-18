@@ -17,6 +17,7 @@
   --obo: #6b5a1e;
   --ols: #1e5b6b;
   --rdfportal: #5b3a7a;
+  --pubmed: #20558a;
   --snapshot: #6c5aa8;
   --reconcile: #707070;
   --radius: 10px;
@@ -43,6 +44,7 @@
     --obo: #d9c27a;
     --ols: #7ac4d9;
     --rdfportal: #c4a3e6;
+    --pubmed: #8fbbe8;
     --snapshot: #b4a6e8;
     --reconcile: #a8a8a8;
     color-scheme: dark;
@@ -108,6 +110,7 @@ h2 { font-size: 15px; margin: 0; }
 .src-obo { background: var(--obo); }
 .src-ols { background: var(--ols); }
 .src-rdfportal { background: var(--rdfportal); }
+.src-pubmed { background: var(--pubmed); }
 .src-snapshot { background: var(--snapshot); }
 .src-reconcile { background: var(--reconcile); }
 @media (prefers-color-scheme: dark) { .badge { color: #111; } }

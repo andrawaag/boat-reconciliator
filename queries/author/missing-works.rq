@@ -2,7 +2,7 @@
 # Used by the "Works missing on Wikidata" panel (src/wikidata-works.js), not shown as a table.
 SELECT ?work (SAMPLE(?t) AS ?title) (SAMPLE(?d) AS ?date) (GROUP_CONCAT(DISTINCT ?wt; separator=" ") AS ?workTypes)
        (GROUP_CONCAT(DISTINCT STR(?cls); separator=" ") AS ?classes) (SAMPLE(?v) AS ?venue) (SAMPLE(?issn) AS ?venueIssn)
-       (GROUP_CONCAT(DISTINCT ?src; separator=" ") AS ?sources) WHERE {
+       (GROUP_CONCAT(DISTINCT ?src; separator=" ") AS ?sources) (SAMPLE(?pm) AS ?pmid) WHERE {
   {
     SELECT DISTINCT ?work WHERE {
       ?work schema:author <{{iri}}> .
@@ -16,4 +16,5 @@ SELECT ?work (SAMPLE(?t) AS ?title) (SAMPLE(?d) AS ?date) (GROUP_CONCAT(DISTINCT
   OPTIONAL { ?work kr:workType ?wt }
   OPTIONAL { ?work a ?cls }
   OPTIONAL { ?work schema:isPartOf ?v OPTIONAL { ?v schema:issn ?issn } }
+  OPTIONAL { ?work schema:sameAs ?pmIri FILTER(STRSTARTS(STR(?pmIri), "http://rdf.ncbi.nlm.nih.gov/pubmed/")) BIND(STRAFTER(STR(?pmIri), "http://rdf.ncbi.nlm.nih.gov/pubmed/") AS ?pm) }
 } GROUP BY ?work

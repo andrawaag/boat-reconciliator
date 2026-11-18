@@ -2,7 +2,7 @@
 
 **koetai reconciliator** reconciles entities across linked-data sources into one RDF graph per entity, and publishes the result as a static site with no server. It's a GitHub template, so anyone can run their own instance.
 
-It covers scholarly entities and ontology terms. Each page (a researcher, a work, a topic or a venue) is one RDF graph, merged in your visitors' browsers from **Wikidata, ORCID, Crossref, DataCite, OpenAlex, OBO ontologies (via OLS) and [RDF Portal](https://rdfportal.org)**, with every terminology code checked in OLS, and queried with [Comunica](https://comunica.dev). GitHub Pages hosts the site, and a GitHub Action keeps pre-built snapshots of the pages you feature. You add your own visualizations as a SPARQL query plus a few lines of config.
+It covers scholarly entities and ontology terms. Each page (a researcher, a work, a topic or a venue) is one RDF graph, merged in your visitors' browsers from **Wikidata, ORCID, Crossref, DataCite, OpenAlex, OBO ontologies (via OLS), PubMed and TogoID/NANDO (both via [RDF Portal](https://rdfportal.org))**, with every terminology code checked in OLS, and queried with [Comunica](https://comunica.dev). GitHub Pages hosts the site, and a GitHub Action keeps pre-built snapshots of the pages you feature. You add your own visualizations as a SPARQL query plus a few lines of config.
 
 Inspired by [Scholia](https://github.com/WDscholia/scholia). The aim is to go native on RDF and go beyond Wikidata: the same adapter → reconcile → query pipeline is meant to extend to other domains and terminologies, OBO Foundry ontologies are the first: an ontology term's page reconciles its cross-references to SNOMED CT, MeSH, ICD-9/10/11, UMLS and others against Wikidata. (Developed under the working names frugalScholia and koetai-bibliography.)
 
@@ -97,9 +97,21 @@ The SPARQL endpoint's copy of Wikidata (QLever by default) can lag behind edits 
 
 - **Harvest:** if SPARQL finds no item for an ORCID, DOI, ISSN, OpenAlex or OBO ID, live search is tried. An item found that way is read through the Wikidata API, so the page links to it at once. The page log notes "found by live search".
 - **"Not on Wikidata yet":** live search finds items created minutes ago. If one already carries every identifier, the panel says so instead of proposing edits.
-- **Works missing on Wikidata:** DOIs that SPARQL doesn't know are checked by live search, so a work created in an earlier batch is never proposed again.
+- **Works missing on Wikidata:** DOIs and PubMed IDs that SPARQL doesn't know are checked by live search, so a work created in an earlier batch is never proposed again. Before proposing to add the author to an existing item, the item's author statements (P50) are read live; items that already name the author are listed as "Not proposed".
+- **Adding to an existing item:** when you choose an item (from the identifier matches or "add identifiers to this item" under the name matches), its statements are read live, and only the identifiers it lacks are proposed. The panel lists the ones left out.
+- **Improve Wikidata (terms):** before proposing, the item is read live. Codes it already holds are not proposed again, and removals already done are dropped.
 
 After running a batch, press **Refresh** (live pages) or **Fetch live instead** (snapshot pages) to harvest the page again. Snapshots are rebuilt on the next workflow run. Until SPARQL catches up, lists that come from SPARQL queries (for example the author's works on Wikidata) may still miss the new statements.
+
+## PubMed (via RDF Portal)
+
+The `pubmed` adapter (`src/adapters/pubmed.js`) reads [PubMed](https://pubmed.ncbi.nlm.nih.gov) from RDF Portal's NCBI SPARQL endpoint.
+
+- **Work pages:** the PubMed record for the DOI: PMID, title, date, journal, the ordered author list and the MeSH subjects (with their names). PubMed authors join the other sources' authors by name within the work, so they add a `pubmed` badge rather than extra rows. A work page also opens from a PMID: `pmid:26978244` or a PubMed URL.
+- **Author pages:** the author's DOIs are looked up in batches (about 4 seconds for 600 DOIs). Works found in PubMed get their PMID and major MeSH subjects.
+- **Wikidata:** new items proposed in "Works missing on Wikidata" get the PubMed ID (P698), cited as stated in PubMed (Q180686). Works are also checked on Wikidata by PubMed ID, so an item that has the PMID but no DOI isn't created twice.
+
+PubMed keeps DOIs in their original case. Lookups use Virtuoso's full-text index, which ignores case, and then check the match exactly.
 
 ## Find an author's works missing on Wikidata
 
@@ -171,7 +183,8 @@ OpenAlex  ── REST API (authors, venues, topics,      │   ORCID / DOI / OBO
               citing works)                          │   codes in other terminologies stay mappings (src/vocab.js)
 OBO       ── OLS4 API (terms, hierarchy, xrefs)      │
 OLS check ── OLS4 API (status of every mapped code)  │
-RDF Portal── SPARQL (TogoID links, NANDO check)      ┘                         │
+RDF Portal── SPARQL (TogoID links, NANDO check)      │
+PubMed    ── SPARQL on RDF Portal (records, MeSH)    ┘                         │
                                                               one merged N-Quads graph per entity
                                                        ┌───────────────────────┴───────────────────┐
                                         GitHub Action → data/**/*.nq.gz              browser → harvested live
@@ -195,7 +208,7 @@ Everything is mapped to [schema.org](https://schema.org). Each source writes to 
 | Ontology term | `schema:DefinedTerm`, `schema:termCode`, `schema:inDefinedTermSet`, `rdfs:subClassOf`, `oboInOwl:has…Synonym`, `owl:deprecated` |
 | Mapping | `skos:exactMatch`, `skos:closeMatch` or `oboInOwl:hasDbXref` to a code node with `kr:vocabulary` and `kr:code` |
 | Concept check | on the code node, in the checker's graph (`ols` or `rdfportal`): `kr:checkStatus` (`current`, `obsolete`, `not found`), `kr:checkedName`, `kr:checkedOntology`, `obo:IAO_0100001` (replaced by) |
-| Identity | `schema:sameAs` to `https://orcid.org/…`, `https://doi.org/…`, `http://www.wikidata.org/entity/Q…`, `urn:issn:…`, `https://openalex.org/…`, `http://purl.obolibrary.org/obo/…` |
+| Identity | `schema:sameAs` to `https://orcid.org/…`, `https://doi.org/…`, `http://www.wikidata.org/entity/Q…`, `urn:issn:…`, `https://openalex.org/…`, `http://purl.obolibrary.org/obo/…`, `http://rdf.ncbi.nlm.nih.gov/pubmed/…` (PMID) |
 | Extras | `kr:citedByCount`, `kr:authorship` → `kr:agent` + `kr:position` (author order), where `kr:` = `urn:koetai-reconciliator:vocab:` |
 
 **Reconciliation.** Nodes linked by `schema:sameAs` are merged under one canonical IRI: ORCID > DOI > OBO term > Wikidata > ISSN > OpenAlex. Mappings (`skos:exactMatch`, cross-references) are never merged, so one concept's codes in other terminologies stay visible as separate rows. Within a single work, authors from different sources are also joined by name: an exact full-name match between identified authors, or a family name plus first initial for authors who only have a per-work ID. Matching never crosses works, so namesakes on different papers stay separate.
@@ -230,7 +243,7 @@ Write `src/adapters/<name>.js` returning quads in graph `urn:koetai-reconciliato
 - **Terminology pages:** only OBO terms have their own pages. SNOMED CT, MeSH and ICD codes are shown as mappings and link out. OLS checks SNOMED CT and MeSH codes, but they don't have pages of their own yet. Term pages show only the newest 1,000 works about the term from Wikidata.
 - **Language and search:** labels are English only, and name search uses Wikidata's search API.
 - **Large pages:** a journal page (about 120k quads) takes several seconds to query in the browser.
-- **RDF Portal:** only TogoID and NANDO are used, on term pages. RDF Portal's PubMed, PubTator, MeSH and MedGen data are not used yet. Its Virtuoso endpoints time out on open-ended patterns, so queries stay anchored on known IRIs. Requests time out after 30 seconds.
+- **RDF Portal:** TogoID and NANDO are used on term pages, and PubMed on work and author pages. RDF Portal's PubTator, ClinVar and MedGen data are not used yet. PubMed has no ORCIDs, so it confirms author lists but can't find people. Its Virtuoso endpoints time out on open-ended patterns, so queries stay anchored on known IRIs. Requests time out after 30 seconds.
 - **Tests:** there are no automated tests yet. Behaviour was checked by hand with `npm run check` and in a browser.
 
 ## AI acknowledgement

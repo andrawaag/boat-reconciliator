@@ -8,6 +8,7 @@ import { lookupQid, lookupOboQid, matchQidByCodes, detectAspect, harvestWikidata
 import { harvestObo } from "./adapters/obo.js";
 import { checkConceptsOls } from "./adapters/ols.js";
 import { harvestTogoid, checkNando } from "./adapters/rdfportal.js";
+import { harvestPubmedWork, harvestPubmedForDois, doiForPmid } from "./adapters/pubmed.js";
 import { findByStatementsLive } from "./wikidata-live.js";
 import { wikidataFormsForObo } from "./vocab.js";
 import { harvestOrcid } from "./adapters/orcid.js";
@@ -42,8 +43,9 @@ export async function harvest(ctx, key, aspectHint, onProgress = () => {}) {
 
   // 1. Cross-identifiers. OpenAlex ids are resolved via OpenAlex; everything else is looked up on Wikidata.
   if (key.scheme === "openalex" && on("openalex")) fill(await resolveOpenalex(ctx, key.value).catch(() => null));
+  if (key.scheme === "pmid" && on("pubmed")) fill({ doi: await doiForPmid(ctx, key.value).catch(() => null) });
   if (!ids.wikidata && on("wikidata")) {
-    for (const scheme of ["orcid", "doi", "issn", "openalex"]) {
+    for (const scheme of ["orcid", "doi", "pmid", "issn", "openalex"]) {
       if (!ids[scheme]) continue;
       ids.wikidata = await lookupQid(ctx, scheme, ids[scheme]).catch(() => null);
       if (ids.wikidata) break;
@@ -54,6 +56,7 @@ export async function harvest(ctx, key, aspectHint, onProgress = () => {}) {
       const pairs = [];
       if (ids.orcid) pairs.push({ property: "P496", value: ids.orcid });
       if (ids.doi) pairs.push({ property: "P356", value: ids.doi.toUpperCase() });
+      if (ids.pmid) pairs.push({ property: "P698", value: ids.pmid });
       if (ids.issn) pairs.push({ property: "P236", value: ids.issn });
       if (ids.openalex) pairs.push({ property: "P10283", value: ids.openalex });
       const forms = ids.obo && wikidataFormsForObo(ids.obo);
@@ -127,6 +130,7 @@ export async function harvest(ctx, key, aspectHint, onProgress = () => {}) {
     if (on("crossref")) jobs.push(step("crossref", "work and references", () => harvestCrossref(ctx, { dois: [ids.doi], references: true })));
     if (on("datacite")) jobs.push(step("datacite", "work and relations", () => harvestDatacite(ctx, { dois: [ids.doi] })));
   }
+  if (aspect === "work" && (ids.doi || ids.pmid) && on("pubmed")) jobs.push(step("pubmed", "PubMed record, authors and MeSH (RDF Portal)", () => harvestPubmedWork(ctx, { doi: ids.doi, pmid: ids.pmid })));
   if (aspect === "work" && (ids.doi || ids.openalex) && on("openalex")) jobs.push(step("openalex", "work, references, citing works", () => harvestOpenalex(ctx, aspect, ids)));
   if (aspect === "venue" && ids.issn && on("crossref")) jobs.push(step("crossref", "journal and recent works", () => harvestCrossref(ctx, { issn: ids.issn })));
   if (aspect === "venue" && (ids.issn || ids.openalex) && on("openalex")) jobs.push(step("openalex", "source and recent works", () => harvestOpenalex(ctx, aspect, ids)));
@@ -143,6 +147,13 @@ export async function harvest(ctx, key, aspectHint, onProgress = () => {}) {
     if (missing.length && on("crossref")) await step("crossref", `${missing.length} more DOIs from ORCID`, () => harvestCrossref(ctx, { dois: missing }));
     missing = orcidDois.filter((d) => !described().has(iri.doi(d)));
     if (missing.length && on("datacite")) await step("datacite", `${missing.length} more DOIs from ORCID`, () => harvestDatacite(ctx, { dois: missing }));
+  }
+
+  // 4b. PubMed (via RDF Portal): PMIDs and MeSH subjects of the author's works, found by DOI.
+  if (aspect === "author" && on("pubmed")) {
+    const authored = new Set(quads.filter((q) => q.predicate.value === NS.schema + "author" && q.subject.value.startsWith("https://doi.org/")).map((q) => q.subject.value.slice(16)));
+    const dois = [...authored].slice(0, 1000);
+    if (dois.length) await step("pubmed", `${dois.length} DOIs looked up in PubMed (RDF Portal)`, () => harvestPubmedForDois(ctx, dois));
   }
 
   // 5. Merge.

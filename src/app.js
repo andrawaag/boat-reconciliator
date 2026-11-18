@@ -5,7 +5,7 @@ import { normalizeConfig, panelsFor } from "./config.js";
 import { parseKey, keyString, iriToKey } from "./model.js";
 import { harvest } from "./harvest.js";
 import { searchObo } from "./adapters/obo.js";
-import { findByStatementsLive } from "./wikidata-live.js";
+import { findByStatementsLive, claimValuesLive } from "./wikidata-live.js";
 import { gatherFixes, buildFixCommands, fixKey } from "./wikidata-fix.js";
 import { gatherMissingWorks, checkOnWikidata, buildWorkCommands, workStatus, P31_LABEL } from "./wikidata-works.js";
 import { gatherCandidate, findExisting, searchByName, buildCommands, quickStatementsUrl, propertyLabel, propertyUrl } from "./wikidata-create.js";
@@ -95,6 +95,7 @@ function externalUrl(key) {
     issn: `https://portal.issn.org/resource/ISSN/${key.value}`,
     openalex: `https://openalex.org/${key.value}`,
     obo: `http://purl.obolibrary.org/obo/${key.value}`,
+    pmid: `https://pubmed.ncbi.nlm.nih.gov/${key.value}/`,
   }[key.scheme];
 }
 
@@ -283,13 +284,32 @@ async function wikidataPanel(graph) {
 
   let target = existing[0]?.qid ?? null;
   const textarea = h("textarea", { class: "qs", rows: 10, spellcheck: "false", "aria-label": "QuickStatements commands" });
-  const regenerate = () => {
-    const have = new Set(existing.filter((e) => e.qid === target).map((e) => `${e.property}|${e.value}`));
-    const ids = target ? cand.ids.filter((x) => !have.has(`${x.property}|${x.value}`)) : cand.ids;
-    textarea.value = buildCommands({ ...cand, ids }, { target });
-    modeLine.replaceChildren(target
-      ? h("span", {}, "Adds the missing identifiers to ", h("a", { href: `https://www.wikidata.org/wiki/${target}`, target: "_blank", rel: "noopener" }, target), ". ", h("button", { type: "button", class: "linkish", onclick: () => { target = null; regenerate(); } }, "Create a new item instead"))
-      : h("span", {}, "Creates a new item for a human researcher with these names and identifiers."));
+  // For an existing item, read its statements live and propose only the identifiers it lacks. An item picked from the
+  // name matches was not found through these identifiers, so the lookups above say nothing about what it holds.
+  let generation = 0;
+  const regenerate = async () => {
+    const mine = ++generation;
+    if (!target) {
+      textarea.value = buildCommands(cand, { target });
+      modeLine.replaceChildren(h("span", {}, "Creates a new item for a human researcher with these names and identifiers."));
+      return;
+    }
+    const itemLink = h("a", { href: `https://www.wikidata.org/wiki/${target}`, target: "_blank", rel: "noopener" }, target);
+    const createInstead = h("button", { type: "button", class: "linkish", onclick: () => { target = null; regenerate(); } }, "Create a new item instead");
+    textarea.value = "";
+    modeLine.replaceChildren(h("span", {}, "Reading ", itemLink, " on Wikidata…"));
+    let held;
+    try { held = await claimValuesLive(fetch, target, cand.ids.map((x) => x.property)); }
+    catch { held = new Map(); for (const e of existing.filter((e) => e.qid === target)) (held.get(e.property) ?? held.set(e.property, new Set()).get(e.property)).add(e.value.toUpperCase()); }
+    if (mine !== generation) return; // another item was picked meanwhile
+    const has = (x) => held.get(x.property)?.has(String(x.value).toUpperCase());
+    const ids = cand.ids.filter((x) => !has(x));
+    const skipped = cand.ids.filter(has);
+    textarea.value = ids.length ? buildCommands({ ...cand, ids }, { target }) : "";
+    modeLine.replaceChildren(h("span", {},
+      ids.length ? ["Adds the ", ids.length === 1 ? "identifier" : `${ids.length} identifiers`, " that ", itemLink, " lacks. "] : [itemLink, " already has all of these identifiers; there is nothing to add. "],
+      skipped.length ? `Already on the item, so left out: ${skipped.map((x) => `${propertyLabel(x.property)} ${x.value}`).join(", ")}. ` : "",
+      createInstead));
   };
   const modeLine = h("p", { class: "mode-line" });
   const useItem = (qid) => h("button", { type: "button", class: "linkish", onclick: () => { target = qid; regenerate(); textarea.scrollIntoView({ block: "nearest" }); } }, "add identifiers to this item");
@@ -375,13 +395,13 @@ async function missingWorksPanel(graph) {
     ] : null;
     const wdItem = (w) => [" → ", h("a", { href: `https://www.wikidata.org/wiki/${w.existing.qid}`, target: "_blank", rel: "noopener" }, w.existing.qid),
       w.myPosition ? ` as author #${w.myPosition}` : "", w.removable ? `, replacing name string “${w.removable}”` : ""];
-    const skippedWhy = { "no-authors": "no author list from Crossref, DataCite or OpenAlex", unsupported: "work type not supported", "link-blocked": "on Wikidata; create this person's item first", duplicate: "same title as another DOI that is on Wikidata or proposed above (e.g. another Zenodo version)" };
+    const skippedWhy = { linked: "on Wikidata, and the item already names this author (a recent edit the SPARQL copy doesn't show yet)", "no-authors": "no author list from Crossref, DataCite or OpenAlex", unsupported: "work type not supported", "link-blocked": "on Wikidata; create this person's item first", duplicate: "same title as another DOI that is on Wikidata or proposed above (e.g. another Zenodo version)" };
 
     status.textContent = `${groups.create.length} to create · ${groups.link.length} to link`;
     body.replaceChildren(...h("div", {},
       !found.authorQid ? h("p", { class: "warn" }, "This person has no Wikidata item yet, so new items list them as an author name string (P2093). Create their item first (see “Not on Wikidata yet”) to link them properly.") : null,
       group("Add this author to existing items", groups.link, "These works are on Wikidata and their author list names this person, but the item has no author statement for them.", wdItem),
-      group("Create new items", groups.create, "Not on Wikidata. Papers are ticked; data sets, software and books are not. Each item gets title, type, DOI, date, venue and all authors in order (Wikidata items where known, otherwise name strings)."),
+      group("Create new items", groups.create, "Not on Wikidata. Papers are ticked; data sets, software and books are not. Each item gets title, type, DOI, PubMed ID where known, date, venue and all authors in order (Wikidata items where known, otherwise name strings)."),
       group("Only claimed by ORCID", groups.claimed, "On Wikidata, but this person is not in the work's author list (for example a group author). Check before adding.", wdItem),
       groups.skipped.length ? [h("h3", {}, `Not proposed (${groups.skipped.length})`), h("ul", { class: "matches" }, groups.skipped.map((w) => h("li", {}, h("a", { href: `#/work/doi:${w.doi}` }, w.title || w.doi), ` · ${skippedWhy[w.status] ?? w.status}`)))] : null,
       h("h3", {}, "QuickStatements"),
@@ -404,6 +424,18 @@ async function termFixPanel(graph) {
   const run = async (file) => (await engine.queryBindings(fillPanel(await loadText("queries/prefixes.rq"), await loadText(file), graph.iri), { sources: [graph.store], unionDefaultGraph: true })).toArray();
   const fix = await gatherFixes(run, graph.iri, fetch);
   if (!fix.qid) return null;
+  // The proposals come from the SPARQL copy, which lags: check the item live, so statements added minutes ago are
+  // not proposed again and removals that were already done are dropped.
+  const props = [fix.own, ...fix.additions, ...fix.removals].filter(Boolean).map((x) => x.property);
+  if (props.length) {
+    const held = await claimValuesLive(fetch, fix.qid, props).catch(() => null);
+    if (held) {
+      const has = (x) => held.get(x.property)?.has(String(x.value).toUpperCase());
+      if (fix.own && has(fix.own)) fix.own = null;
+      fix.additions = fix.additions.filter((x) => !has(x));
+      fix.removals = fix.removals.filter(has);
+    }
+  }
   const proposals = [fix.own, ...fix.additions, ...fix.removals].filter(Boolean);
   if (!proposals.length && !fix.review.length) return null;
 
@@ -446,7 +478,7 @@ let routeId = 0;
 async function entityPage(aspectHint, rawKey) {
   const myRoute = routeId;
   const key = parseKey(rawKey);
-  if (!key) return notFound(`"${rawKey}" is not an ORCID, DOI, ISSN or Wikidata QID.`);
+  if (!key) return notFound(`"${rawKey}" is not an ORCID, DOI, PMID, ISSN, Wikidata QID or ontology term ID.`);
   const progress = h("ol", { class: "progress" });
   const steps = new Map();
   const onProgress = (p) => {
@@ -520,7 +552,7 @@ async function home() {
   main.replaceChildren(h("section", { class: "home" },
     h("h1", {}, config.tagline),
     config.intro && h("p", { class: "lede" }, config.intro),
-    h("p", {}, config.liveHarvest ? "Search above, or paste an ORCID, DOI, ISSN, Wikidata QID, OpenAlex id or ontology term ID (e.g. MONDO:0005148)." : "This site shows the pre-built pages below."),
+    h("p", {}, config.liveHarvest ? "Search above, or paste an ORCID, DOI, PMID (e.g. pmid:26978244), ISSN, Wikidata QID, OpenAlex id or ontology term ID (e.g. MONDO:0005148)." : "This site shows the pre-built pages below."),
     h("h2", {}, "Featured"),
     Object.keys(byAspect).length ? h("div", { class: "snapshots" }, Object.entries(byAspect).map(([a, list]) => h("div", {},
       h("h3", {}, ASPECTS[a]?.title ?? a),
