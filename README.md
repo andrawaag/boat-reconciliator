@@ -170,6 +170,10 @@ Orphanet disorders and groups have term pages too: paste `ORPHA:558`, `Orphanet_
 
 A specialised instance built on this lives at [rare-disease-reconciliator](https://github.com/andrawaag/rare-disease-reconciliator).
 
+### Associated genes
+
+Term pages for diseases list the genes linked to them on Wikidata (genetic association, P2293), read live from the Wikidata API. Each gene shows its HGNC ID, the sources its statements cite (OMIM, UniProt, Open Targets, GWAS papers, …) and how the link was found (for example, genome-wide association study). OLS's copy of Orphanet has no disease–gene links. Orphanet's own gene data is published only as downloadable files, so Wikidata is the open source that can be queried here.
+
 ### Wikipedia coverage
 
 Term and topic pages linked to a Wikidata item get a **Wikipedia articles** panel: which Wikipedias have an article (the item's sitelinks, read live), which of the languages in `wikipediaLanguages` lack one, and a link to translate it from the best existing article with Wikipedia's Content Translation tool.
