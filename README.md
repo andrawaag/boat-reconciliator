@@ -102,7 +102,7 @@ The SPARQL endpoint's copy of Wikidata (QLever by default) can lag behind edits 
 - **"Not on Wikidata yet":** live search finds items created minutes ago. If one already carries every identifier, the panel says so instead of proposing edits.
 - **Works missing on Wikidata:** DOIs and PubMed IDs that SPARQL doesn't know are checked by live search, so a work created in an earlier batch is never proposed again. Before proposing to add the author to an existing item, the item's author statements (P50) are read live; items that already name the author are listed as "Not proposed".
 - **Adding to an existing item:** when you choose an item (from the identifier matches or "add identifiers to this item" under the name matches), its statements are read live, and only the identifiers it lacks are proposed. The panel lists the ones left out.
-- **Improve Wikidata (terms):** before proposing, the item is read live. Codes it already holds are not proposed again, and removals already done are dropped.
+- **Improve Wikidata (terms):** before proposing, the item is read live. Codes it already holds are not proposed again, and codes already deprecated are dropped.
 
 After running a batch, press **Refresh** (live pages) or **Fetch live instead** (snapshot pages) to harvest the page again. Snapshots are rebuilt on the next workflow run. Until SPARQL catches up, lists that come from SPARQL queries (for example the author's works on Wikidata) may still miss the new statements.
 
@@ -192,13 +192,13 @@ When a term is linked to a Wikidata item, an **Improve Wikidata** panel compares
 
 - **Add the term's own ID** (e.g. P5270 for MONDO) when the item was only matched through shared codes.
 - **Add codes the ontology states as exact matches** but the item lacks (e.g. SNOMED CT P5806), with qualifier mapping relation type (P4390) = exact match (Q39893449).
-- **Remove an obsolete ID**: when the item holds a code, in any terminology with a Wikidata property, that OLS reports as obsolete. This one is unticked by default. It also appears on Wikidata topic pages.
+- **Deprecate an obsolete ID**: when the item holds a code, in any terminology with a Wikidata property, that OLS reports as obsolete. The statement is not removed: it is set to deprecated rank with reason for deprecated rank (P2241) "withdrawn identifier value" (Q21441764), so the old code stays findable. QuickStatements can't change ranks, so this edit opens in Wikidata's [API sandbox](https://www.wikidata.org/wiki/Special:ApiSandbox) as a `wbeditentity` request that keeps the statement's qualifiers and references. You check it and press "Make request" while logged in. Unticked by default. It also appears on Wikidata topic pages.
 
 An exact match that OLS reports as obsolete or not found is not proposed for adding; it is listed for review instead.
 
 Additions are referenced with stated in (S248) the ontology's Wikidata item (MONDO Q27468140, DO Q5282129, HPO Q17027854, GO Q135085), reference URL (S854) to the term's PURL, and retrieved (S813). New IDs use the spelling most common on Wikidata for that property (e.g. `MONDO_0005148`, `GO:0006915`). Codes that only Wikidata has are listed for review, without proposed edits. As on author pages, you run the edits in QuickStatements under your own account.
 
-For type 2 diabetes (`MONDO:0005148`) the panel proposes adding MONDO_0005148 and SNOMED CT 44054006 to Q3025883, and offers to remove MONDO_0015887 ("obsolete rare diabetes mellitus type 2").
+For type 2 diabetes (`MONDO:0005148`) the panel proposes adding MONDO_0005148 and SNOMED CT 44054006 to Q3025883, and offers to deprecate MONDO_0015887 ("obsolete rare diabetes mellitus type 2").
 
 Supported terminologies: SNOMED CT, MeSH, ICD-9-CM, ICD-10, ICD-10-CM, ICD-11, UMLS, OMIM, Orphanet, MedGen, NANDO, and OBO ontologies (MONDO, DOID, HPO, GO, NCIt, UBERON, CL, ChEBI, NCBITaxon, SO, ENVO; other OBO prefixes get PURLs, anything else a [Bioregistry](https://bioregistry.io) IRI). Add one in `VOCABS` in `src/vocab.js`.
 
