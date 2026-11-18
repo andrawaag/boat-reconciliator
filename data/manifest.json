@@ -245,6 +245,42 @@
           "ms": 1147
         }
       ]
+    },
+    "obo:Orphanet_558": {
+      "name": "Marfan syndrome",
+      "aspect": "term",
+      "iri": "http://www.orpha.net/ORDO/Orphanet_558",
+      "file": "data/term/obo_Orphanet_558.nq.gz",
+      "quads": 13774,
+      "bytes": 201294,
+      "generated": "2026-11-18T08:48:13.552Z",
+      "endpoint": "https://qlever.dev/api/wikidata",
+      "log": [
+        {
+          "source": "obo",
+          "what": "term, hierarchy and cross-references (OLS)",
+          "quads": 83,
+          "ms": 1637
+        },
+        {
+          "source": "wikidata",
+          "what": "term neighbourhood",
+          "quads": 19449,
+          "ms": 6372
+        },
+        {
+          "source": "rdfportal",
+          "what": "TogoID links and ClinVar variants",
+          "quads": 19,
+          "ms": 1530
+        },
+        {
+          "source": "ols",
+          "what": "codes checked in OLS",
+          "quads": 18,
+          "ms": 449
+        }
+      ]
     }
   },
   "aliases": {
@@ -258,7 +294,9 @@
     "openalex:S2607323502": "issn:2052-4463",
     "wikidata:Q3025883": "obo:MONDO_0005148",
     "openalex:C2777180221": "obo:MONDO_0005148",
-    "openalex:C2910068830": "obo:MONDO_0005148"
+    "openalex:C2910068830": "obo:MONDO_0005148",
+    "openalex:C2780561598": "obo:Orphanet_558",
+    "wikidata:Q208562": "obo:Orphanet_558"
   },
-  "generated": "2026-11-18T08:03:02.695Z"
+  "generated": "2026-11-18T08:48:13.553Z"
 }
