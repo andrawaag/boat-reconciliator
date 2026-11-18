@@ -30,6 +30,9 @@ Snapshots refresh every Monday. Run the workflow by hand (**Actions → site →
 | `wikidataCreate` | `false` hides the "Not on Wikidata yet" panel on author pages (default `true`) |
 | `wikidataWorks` | `false` hides the "Works missing on Wikidata" panel on author pages (default `true`) |
 | `wikidataFixes` | `false` hides the "Improve Wikidata" panel on ontology term and topic pages (default `true`) |
+| `wikipediaCoverage` | `false` hides the "Wikipedia articles" and Orphanet "Subtypes" panels (default `true`) |
+| `wikipediaLanguages` | languages checked for missing Wikipedia articles, first one preselected (default: en, de, fr, es, it, nl, pt, pl, ru, ja, zh, ar) |
+| `searchOntologies` | OLS ontologies the search box covers, e.g. `["ordo", "mondo"]` (default: all) |
 | `seeds` | Entities to pre-build and feature on the home page: `orcid:…`, `doi:…`, `issn:…`, `wikidata:Q…`, `openalex:A…/W…/S…/T…`, `obo:MONDO_0005148` (an OBO term; `MONDO:0005148` works too). An object `{ "key": "…", "aspect": "author" }` forces the page type |
 | `panels` | Per page type (`author`, `work`, `topic`, `venue`, `term`, `common`): `hide` built-in panels by id, `add` your own |
 
@@ -126,7 +129,7 @@ Every statement cites the metadata source (stated in Crossref Q5188229, DataCite
 
 ## Ontology terms and terminology mappings
 
-Any OBO Foundry term has a page: search by name (results come from Wikidata and from [OLS](https://www.ebi.ac.uk/ols4/)), or paste an ID such as `MONDO:0005148`, `DOID:9352`, `GO:0006915` or `HP:0005978`.
+Any OBO Foundry term, and any Orphanet disorder (see below), has a page: search by name (results come from Wikidata and from [OLS](https://www.ebi.ac.uk/ols4/)), or paste an ID such as `MONDO:0005148`, `DOID:9352`, `GO:0006915` or `HP:0005978`.
 
 1. **The ontology.** The `obo` adapter (`src/adapters/obo.js`) reads the term from EBI's Ontology Lookup Service: label, definition, synonyms with their OBO scope, obsolete status, is-a parents and children, and the term's cross-references.
 2. **Wikidata.** The item is found through the ontology's own Wikidata property (P5270 MONDO, P699 DOID, P686 GO, P3841 HPO, …) or P2888 exact match. If none carries the term's ID, the item that shares the most of the term's exact cross-references is used, and the page shows which codes matched.
@@ -154,6 +157,30 @@ OLS covers all OBO ontologies it loads, SNOMED CT, MeSH, Orphanet (ORDO) and EFO
 If OLS is slow or down, each request times out after 12 seconds. After three failures in a row, the check stops and the page log says "OLS unavailable", so the page still appears.
 
 Wikidata topic pages that carry such codes get the same checked mappings panel. Topic pages without codes don't show it.
+
+### Orphanet (rare diseases)
+
+Orphanet disorders and groups have term pages too: paste `ORPHA:558`, `Orphanet_558` or an orpha.net disease URL, or search by name (Orphanet hits are listed first). They keep Orphanet's own IRIs (`http://www.orpha.net/ORDO/Orphanet_558`) and are read from ORDO through OLS:
+
+- **Facts:** disorder type, mode of inheritance, age of onset, prevalence, and the orpha.net page, in the details panel.
+- **Classification:** Orphanet groups disorders with part-of links, so its parents and subtypes come from OLS's hierarchical relations.
+- **Mapping types:** Orphanet qualifies each cross-reference. E becomes `exact`, NTBT (the target code is broader) `broad`, BTNT `narrow`; mappings it marks wrong (W) are left out.
+- **TogoID:** links for the Orphanet code (MONDO, MeSH, OMIM, MedGen, MedDRA) and the number of ClinVar variants TogoID relates to it.
+- **Improve Wikidata:** besides the Orphanet ID (P1550) and exact matches, it offers Orphanet's broad and narrow mappings (with mapping relation type broad or narrow match, unticked) and Orphanet's mode of inheritance (P1199). Statements cite Orphanet (Q1515833) and the orpha.net page.
+
+A specialised instance built on this lives at [rare-disease-reconciliator](https://github.com/andrawaag/rare-disease-reconciliator).
+
+### Wikipedia coverage
+
+Term and topic pages linked to a Wikidata item get a **Wikipedia articles** panel: which Wikipedias have an article (the item's sitelinks, read live), which of the languages in `wikipediaLanguages` lack one, and a link to translate it from the best existing article with Wikipedia's Content Translation tool.
+
+Orphanet pages with subtypes also get **Subtypes on Wikidata and Wikipedia**: each subtype's Wikidata item (found by Orphanet ID, live search as fallback), how many Wikipedias cover it, and whether the chosen language has an article. Before anything is created, each subtype without an item is looked up on Wikidata in three ways, so the same disorder under another name isn't duplicated:
+
+- **By identifier:** the codes Orphanet maps it to exactly (OMIM, MONDO, MeSH, ICD-10, UMLS, GARD, …), searched live.
+- **By name and synonym:** Wikidata's entity search on the Orphanet label and each Orphanet synonym.
+- **Full-text:** Wikidata's text search on the label, leaving out scholarly articles and people.
+
+If an item shares an identifier and has no other Orphanet ID, the default is to add the Orphanet ID to it. Name matches are shown as suggestions, and the default is to skip. A new item (label, description "rare disease", instance of type of disease Q112193867, Orphanet ID, subclass of the parent's item, all citing Orphanet) is proposed only when nothing was found. Each subtype also links to Wikidata's own search. Example: ORPHA:622925, "X-linked severe syndromic thoracic aortic aneurysm and dissection", has no item with its Orphanet ID. But Q55782524, "Meester-Loeys syndrome" (an Orphanet synonym), shares OMIM 300989 and UMLS C4310811, so the panel proposes adding the Orphanet ID to it.
 
 ### Improve Wikidata from a term page
 
@@ -206,7 +233,7 @@ Everything is mapped to [schema.org](https://schema.org). Each source writes to 
 | Venue | `schema:Periodical`, `schema:name`, `schema:issn` |
 | Topic | Wikidata items and OpenAlex topics (`schema:DefinedTerm`), `schema:name` |
 | Ontology term | `schema:DefinedTerm`, `schema:termCode`, `schema:inDefinedTermSet`, `rdfs:subClassOf`, `oboInOwl:has…Synonym`, `owl:deprecated` |
-| Mapping | `skos:exactMatch`, `skos:closeMatch` or `oboInOwl:hasDbXref` to a code node with `kr:vocabulary` and `kr:code` |
+| Mapping | `skos:exactMatch`, `skos:closeMatch`, `skos:broadMatch`, `skos:narrowMatch` or `oboInOwl:hasDbXref` to a code node with `kr:vocabulary` and `kr:code` |
 | Concept check | on the code node, in the checker's graph (`ols` or `rdfportal`): `kr:checkStatus` (`current`, `obsolete`, `not found`), `kr:checkedName`, `kr:checkedOntology`, `obo:IAO_0100001` (replaced by) |
 | Identity | `schema:sameAs` to `https://orcid.org/…`, `https://doi.org/…`, `http://www.wikidata.org/entity/Q…`, `urn:issn:…`, `https://openalex.org/…`, `http://purl.obolibrary.org/obo/…`, `http://rdf.ncbi.nlm.nih.gov/pubmed/…` (PMID) |
 | Extras | `kr:citedByCount`, `kr:authorship` → `kr:agent` + `kr:position` (author order), where `kr:` = `urn:koetai-reconciliator:vocab:` |
@@ -240,7 +267,7 @@ Write `src/adapters/<name>.js` returning quads in graph `urn:koetai-reconciliato
 - **Live pages:** a live page appears once its slowest source answers. Crossref sometimes takes 10–15 seconds.
 - **OpenAlex quota:** anonymous use is metered at about 1,000 requests per day per IP. That's ample for visitors; snapshot runs should use `OPENALEX_API_KEY`.
 - **Wikidata author order:** Wikidata's author ordinals (`P1545`) are not mapped yet. Author order comes from Crossref, DataCite and OpenAlex.
-- **Terminology pages:** only OBO terms have their own pages. SNOMED CT, MeSH and ICD codes are shown as mappings and link out. OLS checks SNOMED CT and MeSH codes, but they don't have pages of their own yet. Term pages show only the newest 1,000 works about the term from Wikidata.
+- **Terminology pages:** only OBO terms and Orphanet disorders have their own pages. SNOMED CT, MeSH and ICD codes are shown as mappings and link out. OLS checks SNOMED CT and MeSH codes, but they don't have pages of their own yet. Term pages show only the newest 1,000 works about the term from Wikidata.
 - **Language and search:** labels are English only, and name search uses Wikidata's search API.
 - **Large pages:** a journal page (about 120k quads) takes several seconds to query in the browser.
 - **RDF Portal:** TogoID and NANDO are used on term pages, and PubMed on work and author pages. RDF Portal's PubTator, ClinVar and MedGen data are not used yet. PubMed has no ORCIDs, so it confirms author lists but can't find people. Its Virtuoso endpoints time out on open-ended patterns, so queries stay anchored on known IRIs. Requests time out after 30 seconds.
