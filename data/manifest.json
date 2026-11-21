@@ -6,33 +6,33 @@
       "iri": "http://www.wikidata.org/entity/Q25173",
       "file": "data/vessel/wikidata_Q25173.nq.gz",
       "quads": 722,
-      "bytes": 10615,
-      "generated": "2026-11-21T09:06:08.290Z",
+      "bytes": 10617,
+      "generated": "2026-11-21T09:10:24.465Z",
       "endpoint": "https://qlever.dev/api/wikidata",
       "log": [
         {
           "source": "wikidata",
           "what": "vessel neighbourhood",
           "quads": 493,
-          "ms": 463
+          "ms": 666
         },
         {
           "source": "wikidata",
           "what": "statements (live) and sister ships",
           "quads": 186,
-          "ms": 5687
+          "ms": 13995
         },
         {
           "source": "osm",
           "what": "features tagged with this item",
           "quads": 12,
-          "ms": 84
+          "ms": 99
         },
         {
           "source": "commons",
           "what": "category and images",
           "quads": 78,
-          "ms": 223
+          "ms": 261
         },
         {
           "source": "reconcile",
@@ -222,5 +222,5 @@
     "mmsi:353136000": "imo:9811000",
     "imo:5375992": "wikidata:Q1624735"
   },
-  "generated": "2026-11-21T09:08:01.014Z"
+  "generated": "2026-11-21T09:10:24.467Z"
 }

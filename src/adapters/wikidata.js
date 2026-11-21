@@ -139,7 +139,9 @@ SELECT ?prop ?label ?value (SAMPLE(?f) AS ?fmt) WHERE { wd:${qid} ?d ?value . ?p
     out.lit(node, S + "propertyID", p);
     out.lit(node, S + "value", v);
     out.lit(node, S + "name", r.get("label")?.value ?? p);
-    if (fmt) out.add(node, S + "url", fmt.replace("$1", encodeURIComponent(v).replace(/%2F/g, "/")));
+    // Formatter URLs can hold characters an IRI may not (DPLA's is …?subject="$1"): percent-encode them, or the
+    // snapshot's N-Quads would not parse back.
+    if (fmt) out.add(node, S + "url", fmt.replace("$1", encodeURIComponent(v).replace(/%2F/g, "/")).replace(/[\s"<>{}|\\^`]/g, (c) => encodeURIComponent(c)));
   }
   return out.quads;
 }
