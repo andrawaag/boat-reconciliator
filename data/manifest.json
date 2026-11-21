@@ -1,314 +1,226 @@
 {
   "entities": {
-    "wikidata:Q18618629": {
-      "name": "Denny Vrandečić",
-      "aspect": "author",
-      "iri": "https://orcid.org/0000-0002-9593-2294",
-      "file": "data/author/wikidata_Q18618629.nq.gz",
-      "quads": 2884,
-      "bytes": 30976,
-      "generated": "2026-11-18T08:02:00.659Z",
+    "wikidata:Q25173": {
+      "name": "Titanic",
+      "aspect": "vessel",
+      "iri": "http://www.wikidata.org/entity/Q25173",
+      "file": "data/vessel/wikidata_Q25173.nq.gz",
+      "quads": 722,
+      "bytes": 10615,
+      "generated": "2026-11-21T09:06:08.290Z",
       "endpoint": "https://qlever.dev/api/wikidata",
       "log": [
         {
           "source": "wikidata",
-          "what": "author neighbourhood",
-          "quads": 1369,
-          "ms": 1155
+          "what": "vessel neighbourhood",
+          "quads": 493,
+          "ms": 463
         },
-        {
-          "source": "datacite",
-          "what": "works with this ORCID",
-          "quads": 0,
-          "ms": 680
-        },
-        {
-          "source": "orcid",
-          "what": "record and works",
-          "quads": 10,
-          "ms": 692
-        },
-        {
-          "source": "openalex",
-          "what": "works by this author",
-          "quads": 2336,
-          "ms": 1900
-        },
-        {
-          "source": "crossref",
-          "what": "works with this ORCID",
-          "quads": 60,
-          "ms": 3772
-        },
-        {
-          "source": "pubmed",
-          "what": "38 DOIs looked up in PubMed (RDF Portal)",
-          "quads": 30,
-          "ms": 3679
-        }
-      ]
-    },
-    "orcid:0000-0001-9488-1870": {
-      "name": "Daniel Mietchen",
-      "aspect": "author",
-      "iri": "https://orcid.org/0000-0001-9488-1870",
-      "file": "data/author/orcid_0000-0001-9488-1870.nq.gz",
-      "quads": 32782,
-      "bytes": 311572,
-      "generated": "2026-11-18T08:02:17.253Z",
-      "endpoint": "https://qlever.dev/api/wikidata",
-      "log": [
         {
           "source": "wikidata",
-          "what": "author neighbourhood",
-          "quads": 6826,
-          "ms": 3019
+          "what": "statements (live) and sister ships",
+          "quads": 186,
+          "ms": 5687
         },
         {
-          "source": "orcid",
-          "what": "record and works",
-          "quads": 1295,
-          "ms": 666
+          "source": "osm",
+          "what": "features tagged with this item",
+          "quads": 12,
+          "ms": 84
         },
         {
-          "source": "datacite",
-          "what": "works with this ORCID",
-          "quads": 6925,
-          "ms": 1174
-        },
-        {
-          "source": "openalex",
-          "what": "works by this author",
-          "quads": 15572,
-          "ms": 2612
-        },
-        {
-          "source": "crossref",
-          "what": "works with this ORCID",
-          "quads": 5911,
-          "ms": 4309
-        },
-        {
-          "source": "crossref",
-          "what": "141 more DOIs from ORCID",
-          "quads": 270,
-          "ms": 2344
-        },
-        {
-          "source": "datacite",
-          "what": "135 more DOIs from ORCID",
-          "quads": 3617,
-          "ms": 1596
-        },
-        {
-          "source": "pubmed",
-          "what": "574 DOIs looked up in PubMed (RDF Portal)",
-          "quads": 452,
-          "ms": 3615
-        }
-      ]
-    },
-    "doi:10.1145/2629489": {
-      "name": "Wikidata: A Free Collaborative Knowledgebase",
-      "aspect": "work",
-      "iri": "https://doi.org/10.1145/2629489",
-      "file": "data/work/doi_10.1145_2629489.nq.gz",
-      "quads": 6518,
-      "bytes": 103073,
-      "generated": "2026-11-18T08:02:25.395Z",
-      "endpoint": "https://qlever.dev/api/wikidata",
-      "log": [
-        {
-          "source": "wikidata",
-          "what": "work neighbourhood",
-          "quads": 5581,
-          "ms": 2872
-        },
-        {
-          "source": "datacite",
-          "what": "work and relations",
-          "quads": 0,
-          "ms": 363
-        },
-        {
-          "source": "pubmed",
-          "what": "PubMed record, authors and MeSH (RDF Portal)",
-          "quads": 0,
-          "ms": 1277
-        },
-        {
-          "source": "openalex",
-          "what": "work, references, citing works",
-          "quads": 907,
-          "ms": 1375
-        },
-        {
-          "source": "crossref",
-          "what": "work and references",
-          "quads": 36,
-          "ms": 4912
-        }
-      ]
-    },
-    "wikidata:Q2013": {
-      "name": "Wikidata",
-      "aspect": "topic",
-      "iri": "http://www.wikidata.org/entity/Q2013",
-      "file": "data/topic/wikidata_Q2013.nq.gz",
-      "quads": 15735,
-      "bytes": 214955,
-      "generated": "2026-11-18T08:02:32.008Z",
-      "endpoint": "https://qlever.dev/api/wikidata",
-      "log": [
-        {
-          "source": "wikidata",
-          "what": "topic neighbourhood",
-          "quads": 20770,
-          "ms": 6269
-        }
-      ]
-    },
-    "issn:2052-4463": {
-      "name": "Scientific Data",
-      "aspect": "venue",
-      "iri": "http://www.wikidata.org/entity/Q27725928",
-      "file": "data/venue/issn_2052-4463.nq.gz",
-      "quads": 125883,
-      "bytes": 1302405,
-      "generated": "2026-11-18T08:02:49.354Z",
-      "endpoint": "https://qlever.dev/api/wikidata",
-      "log": [
-        {
-          "source": "wikidata",
-          "what": "venue neighbourhood",
-          "quads": 67766,
-          "ms": 10800
-        },
-        {
-          "source": "openalex",
-          "what": "source and recent works",
-          "quads": 44974,
-          "ms": 5033
-        },
-        {
-          "source": "crossref",
-          "what": "journal and recent works",
-          "quads": 30495,
-          "ms": 5591
-        }
-      ]
-    },
-    "obo:MONDO_0005148": {
-      "name": "type 2 diabetes mellitus",
-      "aspect": "term",
-      "iri": "http://purl.obolibrary.org/obo/MONDO_0005148",
-      "file": "data/term/obo_MONDO_0005148.nq.gz",
-      "quads": 15898,
-      "bytes": 225790,
-      "generated": "2026-11-18T09:34:11.267Z",
-      "endpoint": "https://qlever.dev/api/wikidata",
-      "log": [
-        {
-          "source": "obo",
-          "what": "term, hierarchy and cross-references (OLS)",
-          "quads": 135,
-          "ms": 263
+          "source": "commons",
+          "what": "category and images",
+          "quads": 78,
+          "ms": 223
         },
         {
           "source": "reconcile",
-          "what": "Wikidata Q3025883 matched by DOID:9352, ICD10CM:E11, ICD10WHO:E11, ICD11:119724091, MESH:D003924, NCIT:C26747, OMIM:125853, UMLS:C0011860",
-          "quads": 9,
-          "ms": 0
-        },
-        {
-          "source": "wikidata",
-          "what": "term neighbourhood",
-          "quads": 21016,
-          "ms": 4907
-        },
-        {
-          "source": "wikidata",
-          "what": "gene associations (live)",
-          "quads": 627,
-          "ms": 1376
-        },
-        {
-          "source": "rdfportal",
-          "what": "TogoID links and ClinVar variants",
-          "quads": 16,
-          "ms": 1803
-        },
-        {
-          "source": "ols",
-          "what": "codes checked in OLS",
-          "quads": 24,
-          "ms": 157
-        },
-        {
-          "source": "rdfportal",
-          "what": "NANDO codes checked",
-          "quads": 3,
-          "ms": 282
+          "what": "checks across Wikidata, Commons and OpenStreetMap",
+          "quads": 20,
+          "ms": 1
         }
       ]
     },
-    "obo:Orphanet_558": {
-      "name": "Marfan syndrome",
-      "aspect": "term",
-      "iri": "http://www.orpha.net/ORDO/Orphanet_558",
-      "file": "data/term/obo_Orphanet_558.nq.gz",
-      "quads": 13782,
-      "bytes": 204146,
-      "generated": "2026-11-18T09:34:22.047Z",
+    "wikidata:Q171255": {
+      "name": "Cutty Sark",
+      "aspect": "vessel",
+      "iri": "http://www.wikidata.org/entity/Q171255",
+      "file": "data/vessel/wikidata_Q171255.nq.gz",
+      "quads": 428,
+      "bytes": 5575,
+      "generated": "2026-11-21T09:06:09.870Z",
       "endpoint": "https://qlever.dev/api/wikidata",
       "log": [
         {
-          "source": "obo",
-          "what": "term, hierarchy and cross-references (OLS)",
-          "quads": 83,
-          "ms": 61
+          "source": "wikidata",
+          "what": "vessel neighbourhood",
+          "quads": 147,
+          "ms": 385
         },
         {
           "source": "wikidata",
-          "what": "term neighbourhood",
-          "quads": 19449,
-          "ms": 7258
+          "what": "statements (live) and sister ships",
+          "quads": 175,
+          "ms": 990
+        },
+        {
+          "source": "osm",
+          "what": "features tagged with this item",
+          "quads": 6,
+          "ms": 99
+        },
+        {
+          "source": "commons",
+          "what": "category and images",
+          "quads": 78,
+          "ms": 192
+        },
+        {
+          "source": "reconcile",
+          "what": "checks across Wikidata, Commons and OpenStreetMap",
+          "quads": 27,
+          "ms": 0
+        }
+      ]
+    },
+    "imo:9811000": {
+      "name": "Ever Given",
+      "aspect": "vessel",
+      "iri": "http://www.wikidata.org/entity/Q104378621",
+      "file": "data/vessel/imo_9811000.nq.gz",
+      "quads": 173,
+      "bytes": 2608,
+      "generated": "2026-11-21T09:07:01.257Z",
+      "endpoint": "https://qlever.dev/api/wikidata",
+      "log": [
+        {
+          "source": "wikidata",
+          "what": "vessel neighbourhood",
+          "quads": 50,
+          "ms": 402
         },
         {
           "source": "wikidata",
-          "what": "gene associations (live)",
+          "what": "statements (live) and sister ships",
+          "quads": 91,
+          "ms": 3980
+        },
+        {
+          "source": "osm",
+          "what": "features tagged with this item",
+          "quads": 0,
+          "ms": 104
+        },
+        {
+          "source": "commons",
+          "what": "category and images",
+          "quads": 21,
+          "ms": 46916
+        },
+        {
+          "source": "reconcile",
+          "what": "checks across Wikidata, Commons and OpenStreetMap",
+          "quads": 25,
+          "ms": 0
+        }
+      ]
+    },
+    "wikidata:Q767166": {
+      "name": "Olympic-class ocean liner",
+      "aspect": "class",
+      "iri": "http://www.wikidata.org/entity/Q767166",
+      "file": "data/class/wikidata_Q767166.nq.gz",
+      "quads": 138,
+      "bytes": 2445,
+      "generated": "2026-11-21T09:07:10.802Z",
+      "endpoint": "https://qlever.dev/api/wikidata",
+      "log": [
+        {
+          "source": "wikidata",
+          "what": "class neighbourhood",
           "quads": 8,
-          "ms": 967
+          "ms": 472
         },
         {
-          "source": "rdfportal",
-          "what": "TogoID links and ClinVar variants",
-          "quads": 19,
-          "ms": 1644
+          "source": "wikidata",
+          "what": "ships of this class",
+          "quads": 121,
+          "ms": 8827
         },
         {
-          "source": "ols",
-          "what": "codes checked in OLS",
-          "quads": 18,
-          "ms": 293
+          "source": "commons",
+          "what": "category and images",
+          "quads": 63,
+          "ms": 241
+        }
+      ]
+    },
+    "wikidata:Q848977": {
+      "name": "Harland and Wolff",
+      "aspect": "shipyard",
+      "iri": "http://www.wikidata.org/entity/Q848977",
+      "file": "data/shipyard/wikidata_Q848977.nq.gz",
+      "quads": 3429,
+      "bytes": 26383,
+      "generated": "2026-11-21T09:07:18.842Z",
+      "endpoint": "https://qlever.dev/api/wikidata",
+      "log": [
+        {
+          "source": "wikidata",
+          "what": "shipyard neighbourhood",
+          "quads": 106,
+          "ms": 483
+        },
+        {
+          "source": "wikidata",
+          "what": "ships built here",
+          "quads": 5546,
+          "ms": 7242
+        },
+        {
+          "source": "commons",
+          "what": "category and images",
+          "quads": 78,
+          "ms": 257
+        }
+      ]
+    },
+    "wikidata:Q1624735": {
+      "name": "Holland America Line",
+      "aspect": "operator",
+      "iri": "http://www.wikidata.org/entity/Q1624735",
+      "file": "data/operator/wikidata_Q1624735.nq.gz",
+      "quads": 558,
+      "bytes": 6766,
+      "generated": "2026-11-21T09:08:01.010Z",
+      "endpoint": "https://qlever.dev/api/wikidata",
+      "log": [
+        {
+          "source": "wikidata",
+          "what": "operator neighbourhood",
+          "quads": 111,
+          "ms": 321
+        },
+        {
+          "source": "wikidata",
+          "what": "ships operated or owned",
+          "quads": 799,
+          "ms": 13423
+        },
+        {
+          "source": "commons",
+          "what": "category and images",
+          "quads": 72,
+          "ms": 28398
         }
       ]
     }
   },
   "aliases": {
-    "orcid:0000-0002-9593-2294": "wikidata:Q18618629",
-    "wikidata:Q20895785": "orcid:0000-0001-9488-1870",
-    "wikidata:Q18507561": "doi:10.1145/2629489",
-    "wikidata:Q27725928": "issn:2052-4463",
-    "openalex:A5018023802": "wikidata:Q18618629",
-    "openalex:A5050528093": "orcid:0000-0001-9488-1870",
-    "openalex:W2080133951": "doi:10.1145/2629489",
-    "openalex:S2607323502": "issn:2052-4463",
-    "wikidata:Q3025883": "obo:MONDO_0005148",
-    "openalex:C2777180221": "obo:MONDO_0005148",
-    "openalex:C2910068830": "obo:MONDO_0005148",
-    "openalex:C2780561598": "obo:Orphanet_558",
-    "wikidata:Q208562": "obo:Orphanet_558"
+    "wikidata:Q104378621": "imo:9811000",
+    "mmsi:353136000": "imo:9811000",
+    "imo:5375992": "wikidata:Q1624735"
   },
-  "generated": "2026-11-18T09:34:22.049Z"
+  "generated": "2026-11-21T09:08:01.014Z"
 }
