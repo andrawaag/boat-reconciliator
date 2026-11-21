@@ -16,7 +16,7 @@
   ],
   "wikidataEndpoint": "https://qlever.dev/api/wikidata",
   "liveHarvest": true,
-  "wikidataFixes": false,
+  "wikidataFixes": true,
   "wikipediaCoverage": false,
   "seeds": [
     {

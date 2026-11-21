@@ -11,6 +11,7 @@ import { gatherMissingWorks, checkOnWikidata, buildWorkCommands, workStatus, P31
 import { sitelinksLive, articleUrl, translateUrl, sourceLanguage, languageName, itemsForOrphaCodes, createDiseaseItems, duplicateCandidates, addOrphanetIds, DEFAULT_LANGUAGES } from "./wikipedia.js";
 import { personFacts, profileCandidates, profileCommands } from "./profile-match.js";
 import { BOAT_ASPECTS } from "./adapters/boats.js";
+import { boatEnrichments, enrichmentCommands, INCORRECT_VALUE } from "./boat-fix.js";
 import { gatherCandidate, findExisting, searchByName, buildCommands, quickStatementsUrl, propertyLabel, propertyUrl } from "./wikidata-create.js";
 
 const engine = new QueryEngine();
@@ -572,7 +573,7 @@ async function termFixPanel(graph) {
 // ---------- Improve Wikidata (vessels) ----------
 // Edits that follow from the checks across sources (Commons category from the sitelink, OpenStreetMap IDs of features
 // tagged with the item), plus an image picked from the Commons category. Read live first, so done edits drop out.
-const BOAT_PROPS = { P625: "coordinate location", P373: "Commons category", P402: "OpenStreetMap relation ID", P10689: "OpenStreetMap way ID", P11693: "OpenStreetMap node ID", P18: "image" };
+const BOAT_PROPS = { P458: "IMO ship number", P587: "MMSI", P625: "coordinate location", P373: "Commons category", P402: "OpenStreetMap relation ID", P10689: "OpenStreetMap way ID", P11693: "OpenStreetMap node ID", P18: "image" };
 async function boatFixPanel(graph) {
   const qid = pageQid(graph);
   if (!qid) return null;
@@ -581,23 +582,49 @@ async function boatFixPanel(graph) {
     .map((b) => ({ property: b.get("property").value, value: b.get("value").value, reason: b.get("reason").value, qs: b.get("qs")?.value, on: !b.get("off") }));
   const files = (await run(`SELECT DISTINCT ?file ?thumb ?name WHERE { <${graph.iri}> kr:commonsFile ?file . ?file kr:thumbnail ?thumb ; schema:name ?name }`))
     .map((b) => ({ file: decodeURIComponent(b.get("file").value.split("/wiki/File:")[1] ?? "").replace(/_/g, " "), thumb: b.get("thumb").value, name: b.get("name").value })).filter((f) => f.file);
-  const held = await claimValuesLive(fetch, qid, ["P18", "P373", "P402", "P10689", "P11693", "P625"]).catch(() => new Map());
+  const [held, enrich] = await Promise.all([
+    claimValuesLive(fetch, qid, ["P18", "P373", "P402", "P10689", "P11693", "P625"]).catch(() => new Map()),
+    // The template's enrichment (additions with references, deprecations, review), switched by wikidataFixes.
+    config.wikidataFixes ? boatEnrichments(fetch, qid).catch((err) => { console.warn("Vessel enrichment:", err); return null; }) : null,
+  ]);
   const open = proposals.filter((p) => !held.get(p.property)?.size || (!["P373", "P625"].includes(p.property) && !held.get(p.property).has(p.value.toUpperCase())));
   const pickImage = !held.get("P18")?.size && files.length > 0;
-  if (!open.length && !pickImage) return null;
+  const additions = enrich?.additions ?? [], deprecations = enrich?.deprecations ?? [], review = enrich?.review ?? [];
+  if (!open.length && !pickImage && !additions.length && !deprecations.length && !review.length) return null;
+  const deprecate = new Set(); // opt-in, as on term pages
 
   let image = null;
   const textarea = h("textarea", { class: "qs", rows: 4, spellcheck: "false", "aria-label": "QuickStatements commands" });
   const q = (v) => `"${String(v).replace(/"/g, "")}"`;
   const regenerate = () => {
-    textarea.value = [...open.filter((p) => p.on).map((p) => `${qid}\t${p.property}\t${p.qs ?? q(p.value)}`), image && `${qid}\tP18\t${q(image)}`].filter(Boolean).join("\n");
+    textarea.value = [...open.filter((p) => p.on).map((p) => `${qid}\t${p.property}\t${p.qs ?? q(p.value)}`), enrichmentCommands(qid, additions.filter((a) => a.on)), image && `${qid}\tP18\t${q(image)}`].filter(Boolean).join("\n");
+    const chosen = deprecations.filter((d) => deprecate.has(d.key));
+    const edit = deprecationEdit(qid, chosen, "", { reasonItem: INCORRECT_VALUE, summary: `Deprecate ${chosen.map((d) => `${d.property} ${d.value}`).join(", ")}: ${chosen.map((d) => d.reason).join("; ")} (reason: incorrect value)` });
+    deprecateBox.replaceChildren(...(edit ? [
+      h("h3", {}, "Deprecate in Wikidata's API sandbox"),
+      h("p", { class: "small" }, `QuickStatements can't change a statement's rank. The button opens Wikidata's API sandbox with an edit that sets ${edit.count === 1 ? "this statement" : `these ${edit.count} statements`} to deprecated, with reason for deprecated rank (P2241) “incorrect value” (${INCORRECT_VALUE}). Existing qualifiers and references are kept. Check the request, then press “Make request” while logged in to Wikidata.`),
+      h("div", { class: "actions" },
+        h("a", { class: "button primary", href: edit.url, target: "_blank", rel: "noopener" }, "Open in API sandbox"),
+        h("button", { type: "button", onclick: async (e) => { try { await navigator.clipboard.writeText(edit.data); e.target.textContent = "Copied"; } catch {} } }, "Copy edit JSON")),
+    ] : []));
   };
+  const deprecateBox = h("div", { class: "deprecate" });
+  const commonsLink = (url, text) => h("a", { href: url, target: "_blank", rel: "noopener" }, text);
   const body = h("div", { class: "panel-body" });
   body.append(
     h("p", {}, "These edits follow from the checks above. You run them with ", h("a", { href: "https://www.wikidata.org/wiki/Help:QuickStatements", target: "_blank", rel: "noopener" }, "QuickStatements"), " under your own Wikimedia account."),
     open.length ? h("ul", { class: "matches" }, open.map((p) => h("li", {}, h("label", {},
       h("input", { type: "checkbox", checked: p.on, onchange: (e) => { p.on = e.target.checked; regenerate(); } }), " ",
       h("b", {}, `${BOAT_PROPS[p.property] ?? p.property} (${p.property}) = ${p.value}`), h("span", { class: "muted" }, ` · ${p.reason}`))))) : "",
+    additions.length ? h("ul", { class: "matches" }, additions.map((a) => h("li", {}, h("label", {},
+      h("input", { type: "checkbox", checked: a.on, onchange: (e) => { a.on = e.target.checked; regenerate(); } }), " ",
+      h("b", {}, a.kind === "sitelink" ? `Commons sitelink = ${a.value}` : `${BOAT_PROPS[a.property] ?? a.property} (${a.property}) = ${a.value}`),
+      h("span", { class: "muted" }, ` · ${a.reason}`), a.reference ? [h("span", { class: "muted" }, "; cites "), commonsLink(a.reference.url, "the Commons category"), h("span", { class: "muted" }, " (imported from Wikimedia Commons, P143)")] : "")))) : "",
+    deprecations.length ? h("div", {}, h("h3", {}, "Deprecate"), h("ul", { class: "matches" }, deprecations.map((d) => h("li", {}, h("label", {},
+      h("input", { type: "checkbox", onchange: (e) => { e.target.checked ? deprecate.add(d.key) : deprecate.delete(d.key); regenerate(); } }), " ",
+      h("b", {}, `${BOAT_PROPS[d.property] ?? d.property} (${d.property}) = ${d.value}`),
+      h("span", { class: "muted" }, ` · ${d.reason}. The statement stays on the item, marked deprecated with reason “incorrect value”. Unticked by default.`)))))) : "",
+    review.length ? h("div", {}, h("h3", {}, "Review (no edit proposed)"), h("ul", { class: "matches" }, review.map((r) => h("li", {}, r.url ? commonsLink(r.url, r.text) : r.text)))) : "",
     pickImage ? h("div", {}, h("h3", {}, "Pick an image (P18)"), h("p", { class: "muted small" }, "The item has no image. Choose a photo of the vessel itself from its Commons category, or none."),
       h("div", { class: "gallery pick" }, files.slice(0, 18).map((f) => h("label", { class: "figure-pick" },
         h("input", { type: "radio", name: "p18", onchange: () => { image = f.file; regenerate(); } }),
@@ -607,10 +634,11 @@ async function boatFixPanel(graph) {
     h("div", { class: "actions" },
       h("button", { type: "button", class: "primary", onclick: () => textarea.value && window.open(quickStatementsUrl(textarea.value), "_blank", "noopener") }, "Open in QuickStatements"),
       h("button", { type: "button", onclick: async (e) => { try { await navigator.clipboard.writeText(textarea.value); e.target.textContent = "Copied"; } catch { textarea.select(); } } }, "Copy commands")),
+    deprecateBox,
     h("p", { class: "muted small" }, "OpenStreetMap IDs link the item to the mapped wreck or museum ship. Coordinates are never copied from OpenStreetMap, whose licence (ODbL) is not compatible with Wikidata's CC0; a position from NOAA (US government data, public domain) is offered unticked and cites the Office of Coast Survey. After running the edits, refresh this page to see the checks pass."));
   regenerate();
   return h("section", { class: "panel wide wd-create", id: "panel-improve-wikidata" },
-    h("header", {}, h("h2", {}, "Improve Wikidata"), h("span", { class: "timing" }, `${open.length + (pickImage ? 1 : 0)} possible edit${open.length + (pickImage ? 1 : 0) === 1 ? "" : "s"}`)), body);
+    h("header", {}, h("h2", {}, "Improve Wikidata"), h("span", { class: "timing" }, (() => { const n = open.length + additions.length + deprecations.length + (pickImage ? 1 : 0); return n ? `${n} possible edit${n === 1 ? "" : "s"}` : "Review"; })())), body);
 }
 
 // ---------- Wikipedia coverage and subtypes (rare diseases) ----------

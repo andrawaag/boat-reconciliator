@@ -173,15 +173,16 @@ const statementValue = (c) => { const v = c.mainsnak?.datavalue?.value; return t
  * Deprecate statements holding obsolete codes. QuickStatements can't change a statement's rank, so this is a
  * wbeditentity edit the visitor runs in Wikidata's API sandbox, under their own account (the sandbox adds the
  * edit token). `removals`: chosen fix.removals, each with `statements` (live statement JSON holding the value).
+ * `reasonItem`: the reason for deprecated rank (default: withdrawn identifier value); `summary`: the edit summary.
  * Returns { url, data } or null.
  */
-export function deprecationEdit(qid, removals, label) {
+export function deprecationEdit(qid, removals, label, { reasonItem = WITHDRAWN, summary = null } = {}) {
   const claims = [];
   for (const r of removals) for (const c of r.statements ?? []) {
     if (c.rank === "deprecated") continue;
-    const reason = { snaktype: "value", property: "P2241", datavalue: { type: "wikibase-entityid", value: { "entity-type": "item", "numeric-id": Number(WITHDRAWN.slice(1)), id: WITHDRAWN } } };
+    const reason = { snaktype: "value", property: "P2241", datavalue: { type: "wikibase-entityid", value: { "entity-type": "item", "numeric-id": Number(reasonItem.slice(1)), id: reasonItem } } };
     const held = c.qualifiers?.P2241 ?? [];
-    const qualifiers = { ...(c.qualifiers ?? {}), P2241: held.some((x) => x.datavalue?.value?.id === WITHDRAWN) ? held : [...held, reason] };
+    const qualifiers = { ...(c.qualifiers ?? {}), P2241: held.some((x) => x.datavalue?.value?.id === reasonItem) ? held : [...held, reason] };
     const order = [...new Set([...(c["qualifiers-order"] ?? []), "P2241"])];
     claims.push({ ...c, rank: "deprecated", qualifiers, "qualifiers-order": order });
   }
@@ -189,7 +190,7 @@ export function deprecationEdit(qid, removals, label) {
   const codes = removals.map((r) => `${r.property} ${r.value}`).join(", ");
   const by = [...new Set(removals.map((r) => r.status?.from ?? label).filter(Boolean))].join(", ") || "its source";
   const data = JSON.stringify({ claims });
-  const params = new URLSearchParams({ action: "wbeditentity", format: "json", id: qid, data, summary: `Deprecate ${codes}: obsolete according to ${by} (reason: withdrawn identifier value)` });
+  const params = new URLSearchParams({ action: "wbeditentity", format: "json", id: qid, data, summary: summary ?? `Deprecate ${codes}: obsolete according to ${by} (reason: withdrawn identifier value)` });
   return { url: `https://www.wikidata.org/wiki/Special:ApiSandbox#${params.toString().replace(/\+/g, "%20")}`, data, count: claims.length };
 }
 export { statementValue };

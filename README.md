@@ -26,6 +26,12 @@ Site: https://andrawaag.github.io/boat-reconciliator/
   - the Commons category (P373) from the item's Commons sitelink;
   - the OSM node, way or relation ID (P11693, P10689, P402) of a feature tagged with the item;
   - an image (P18) picked from the Commons photos;
+  - the IMO number (P458) from the ship's Commons `IMO 1234567` category (the item's own category or the one it sits in), when the item has none, the check digit is right and no other item holds it. It cites the category (imported from Wikimedia Commons, P143; Wikimedia import URL, P4656);
+  - the Commons sitelink from the item's Commons category (P373), when the category is not linked to an item yet;
+  - **deprecation** of an IMO number whose check digit fails, or an MMSI that isn't nine digits, with reason for deprecated rank “incorrect value” (Q41755623). QuickStatements can't change ranks, so this opens Wikidata's API sandbox with the edit, as on the template's term pages. Unticked by default;
+  - a **review** list of what was found but not proposed: a Commons IMO category whose number is already on another item, or a Commons category that is the sitelink of another, non-category item (both usually mean a duplicate item for the same hull).
+  
+  These last four are the template's Improve Wikidata panel adapted to ships, switched by `wikidataFixes`.
   - for a wreck without a position, the position of the one NOAA record with its name (P625), citing the Office of Coast Survey (Q5138211). It is offered unticked: check that it is the same ship first.
   
   The item is read live first, so done edits drop out. Coordinates are never copied from OpenStreetMap: its licence (ODbL) is not compatible with Wikidata's CC0. NOAA's data is US government work, in the public domain.
@@ -33,7 +39,7 @@ Site: https://andrawaag.github.io/boat-reconciliator/
 
 The scholarly pages of the template (people, works, venues) still work, for maritime historians and the literature about ships.
 
-Examples: [Titanic](https://andrawaag.github.io/boat-reconciliator/#/vessel/wikidata:Q25173), [Cutty Sark](https://andrawaag.github.io/boat-reconciliator/#/vessel/wikidata:Q171255), [Ever Given (IMO 9811000)](https://andrawaag.github.io/boat-reconciliator/#/vessel/imo:9811000), [the Olympic class](https://andrawaag.github.io/boat-reconciliator/#/class/wikidata:Q767166), [Harland and Wolff](https://andrawaag.github.io/boat-reconciliator/#/shipyard/wikidata:Q848977) and [Holland America Line](https://andrawaag.github.io/boat-reconciliator/#/operator/wikidata:Q1624735). Gil Eannes, a hospital ship turned museum (Q10335851), shows a typical fix: OpenStreetMap maps the museum ship as way 188629658 tagged with the item, and the page proposes adding that OSM way ID to Wikidata. [USS Massachusetts](https://andrawaag.github.io/boat-reconciliator/#/vessel/wikidata:Q2697074), scuttled off Pensacola, agrees with NOAA to within 34 m; the schooner [David Dows](https://andrawaag.github.io/boat-reconciliator/#/vessel/wikidata:Q64972671), lost in Lake Michigan in 1889, has no position on Wikidata and gets NOAA's as a proposal.
+Examples: [Titanic](https://andrawaag.github.io/boat-reconciliator/#/vessel/wikidata:Q25173), [Cutty Sark](https://andrawaag.github.io/boat-reconciliator/#/vessel/wikidata:Q171255), [Ever Given (IMO 9811000)](https://andrawaag.github.io/boat-reconciliator/#/vessel/imo:9811000), [the Olympic class](https://andrawaag.github.io/boat-reconciliator/#/class/wikidata:Q767166), [Harland and Wolff](https://andrawaag.github.io/boat-reconciliator/#/shipyard/wikidata:Q848977) and [Holland America Line](https://andrawaag.github.io/boat-reconciliator/#/operator/wikidata:Q1624735). [USS Barnegat](https://andrawaag.github.io/boat-reconciliator/#/vessel/wikidata:Q7867582) gets its IMO number from Commons' IMO 5185336 category, and [RMS Republic](https://andrawaag.github.io/boat-reconciliator/#/vessel/wikidata:Q1797740)'s invalid IMO 1118043 can be deprecated. Gil Eannes, a hospital ship turned museum (Q10335851), shows a typical fix: OpenStreetMap maps the museum ship as way 188629658 tagged with the item, and the page proposes adding that OSM way ID to Wikidata. [USS Massachusetts](https://andrawaag.github.io/boat-reconciliator/#/vessel/wikidata:Q2697074), scuttled off Pensacola, agrees with NOAA to within 34 m; the schooner [David Dows](https://andrawaag.github.io/boat-reconciliator/#/vessel/wikidata:Q64972671), lost in Lake Michigan in 1889, has no position on Wikidata and gets NOAA's as a proposal.
 
 ## Known limits of the boat additions
 
@@ -82,7 +88,7 @@ Snapshots refresh every Monday. Run the workflow by hand (**Actions → site →
 | `wikidataCreate` | `false` hides the "Not on Wikidata yet" panel on author pages (default `true`) |
 | `wikidataWorks` | `false` hides the "Works missing on Wikidata" panel on author pages (default `true`) |
 | `noaaWrecks` | ArcGIS FeatureServer layer for NOAA's wrecks and obstructions (default: a public copy of NOAA's layer; see [NOAA wrecks](#noaa-wrecks)) |
-| `wikidataFixes` | `false` hides the "Improve Wikidata" panel on ontology term and topic pages (default `true`) |
+| `wikidataFixes` | `false` hides the "Improve Wikidata" panel on ontology term and topic pages, and the IMO, sitelink, deprecation and review parts of it on vessel pages (default `true`) |
 | `wikipediaCoverage` | `false` hides the "Wikipedia articles" and Orphanet "Subtypes" panels (default `true`) |
 | `wikipediaLanguages` | languages checked for missing Wikipedia articles, first one preselected (default: en, de, fr, es, it, nl, pt, pl, ru, ja, zh, ar) |
 | `searchOntologies` | OLS ontologies the search box covers, e.g. `["ordo", "mondo"]` (default: all) |
