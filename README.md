@@ -186,6 +186,14 @@ Orphanet pages with subtypes also get **Subtypes on Wikidata and Wikipedia**: ea
 
 If an item shares an identifier and has no other Orphanet ID, the default is to add the Orphanet ID to it. Name matches are shown as suggestions, and the default is to skip. A new item (label, description "rare disease", instance of type of disease Q112193867, Orphanet ID, subclass of the parent's item, all citing Orphanet) is proposed only when nothing was found. Each subtype also links to Wikidata's own search. Example: ORPHA:622925, "X-linked severe syndromic thoracic aortic aneurysm and dissection", has no item with its Orphanet ID. But Q55782524, "Meester-Loeys syndrome" (an Orphanet synonym), shares OMIM 300989 and UMLS C4310811, so the panel proposes adding the Orphanet ID to it.
 
+### People on Wikidata without an ORCID or OpenAlex ID
+
+Author pages get their works from ORCID and OpenAlex. A Wikidata person without either ID (e.g. `#/wikidata:Q76741642`) therefore shows only Wikidata's own statements. For such pages:
+
+- **Find this person's ORCID and OpenAlex profiles** searches OpenAlex's authors and ORCID's records by the item's name. A profile is marked likely, and preselected, when the name matches the item's label or an alias and it shares an employer (P108) with the item. Profiles already on another Wikidata item are flagged. Each candidate links to its own page here, which loads the person's works. The QuickStatements add the chosen ORCID (P496) and OpenAlex ID (P10283) to the item, citing OpenAlex (or ORCID). After you run them, the item's page loads the works itself.
+- **Other identifiers (Wikidata)** lists the person's other external IDs on Wikidata (VIAF, ISNI, GND, Library of Congress, …), linked through each property's formatter URL (P1630).
+- On an ORCID or OpenAlex page whose person has no item with that ID, the "Not on Wikidata yet" panel preselects an existing item with exactly the same name (and not a publication), so the IDs are added there instead of creating a duplicate.
+
 ### Improve Wikidata from a term page
 
 When a term is linked to a Wikidata item, an **Improve Wikidata** panel compares the two and proposes QuickStatements edits, each with a checkbox:
