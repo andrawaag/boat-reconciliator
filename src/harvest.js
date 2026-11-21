@@ -9,7 +9,7 @@ import { harvestObo } from "./adapters/obo.js";
 import { checkConceptsOls } from "./adapters/ols.js";
 import { harvestTogoid, checkNando, togoidIri } from "./adapters/rdfportal.js";
 import { harvestGenesLive } from "./adapters/genes.js";
-import { BOAT_ASPECTS, harvestBoat, harvestCommons, harvestOsm, vesselChecks } from "./adapters/boats.js";
+import { BOAT_ASPECTS, harvestBoat, harvestCommons, harvestOsm, harvestNoaa, vesselChecks } from "./adapters/boats.js";
 import { harvestPubmedWork, harvestPubmedForDois, doiForPmid } from "./adapters/pubmed.js";
 import { findByStatementsLive } from "./wikidata-live.js";
 import { wikidataFormsForObo } from "./vocab.js";
@@ -101,11 +101,12 @@ export async function harvest(ctx, key, aspectHint, onProgress = () => {}) {
   // its Commons category and OpenStreetMap features, then checks across the three.
   if (BOAT_ASPECTS.has(aspect) && ids.wikidata && on("wikidata")) {
     const boat = await step("wikidata", { vessel: "statements (live) and sister ships", class: "ships of this class", shipyard: "ships built here", operator: "ships operated or owned" }[aspect], () => harvestBoat(ctx, ids.wikidata, aspect));
-    const [commons, osm] = await Promise.all([
+    const [commons, osm, noaa] = await Promise.all([
       on("commons") ? step("commons", "category and images", () => harvestCommons(ctx, ids.wikidata, boat?.facts)) : null,
       on("osm") && aspect === "vessel" ? step("osm", "features tagged with this item", () => harvestOsm(ctx, ids.wikidata)) : null,
+      on("noaa") && aspect === "vessel" && boat?.facts ? step("noaa", "charted wrecks by name and position", () => harvestNoaa(ctx, ids.wikidata, boat.facts)) : null,
     ]);
-    if (aspect === "vessel") await step("reconcile", "checks across Wikidata, Commons and OpenStreetMap", () => vesselChecks(ctx, ids.wikidata, boat?.facts, commons?.commons, osm?.osm));
+    if (aspect === "vessel") await step("reconcile", "checks across Wikidata, Commons, OpenStreetMap and NOAA", () => vesselChecks(ctx, ids.wikidata, boat?.facts, commons?.commons, osm?.osm, noaa?.noaa));
   }
   const me = iri.wikidata(ids.wikidata ?? "");
   for (const q of quads) {

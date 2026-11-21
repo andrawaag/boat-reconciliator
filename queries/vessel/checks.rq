@@ -1,4 +1,4 @@
-# How Wikidata, Wikimedia Commons and OpenStreetMap agree about this vessel
+# How Wikidata, Wikimedia Commons, OpenStreetMap and NOAA agree about this vessel
 SELECT ?check ?status ?detail ?see WHERE {
   <{{iri}}> kr:check ?c . ?c schema:name ?check ; kr:status ?status ; schema:description ?detail ; kr:order ?o
   OPTIONAL { ?c kr:see ?see }

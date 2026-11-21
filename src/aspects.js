@@ -6,11 +6,12 @@ export const ASPECTS = {
     panels: [
       { id: "details", title: "Details", render: "kv" },
       { id: "images", title: "Images (Wikimedia Commons)", render: "gallery", wide: true, hideEmpty: true },
-      { id: "checks", title: "Checks across Wikidata, Commons and OpenStreetMap", render: "table", wide: true },
+      { id: "checks", title: "Checks across Wikidata, Commons, OpenStreetMap and NOAA", render: "table", wide: true },
       { id: "timeline", title: "Timeline", render: "table", wide: true, hideEmpty: true },
       { id: "names", title: "Names", render: "table", hideEmpty: true },
       { id: "sister-ships", title: "Sister ships (same class)", render: "table", hideEmpty: true },
       { id: "osm", title: "On OpenStreetMap", render: "table", wide: true, hideEmpty: true },
+      { id: "noaa-wrecks", title: "Charted wrecks (NOAA, US waters)", render: "table", wide: true, hideEmpty: true },
       { id: "works", title: "Works about this vessel", render: "table", hideEmpty: true, query: "queries/topic/works.rq" },
       { id: "external-ids", title: "Other identifiers (Wikidata)", render: "table", wide: true, hideEmpty: true, query: "queries/author/external-ids.rq" },
     ],

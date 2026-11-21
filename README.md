@@ -12,25 +12,28 @@ Site: https://andrawaag.github.io/boat-reconciliator/
   - **Names:** the ship's names over time (P2561, P1448).
   - **Sister ships:** the other ships of its class.
   - **Images:** the Wikidata image and a gallery from the ship's Commons category, one level of subcategories deep when the category itself is nearly empty (as Commons' `IMO 1234567` categories often are).
+  - **Charted wrecks (NOAA):** wrecks and obstructions on NOAA's nautical charts of US waters (Great Lakes included) with the ship's name, or within 1 km of its Wikidata position. Each row gives the record's source (the older AWOIS database or a chart cell), category, year sunk and NOAA's note. See [NOAA wrecks](#noaa-wrecks) below.
   - **On OpenStreetMap:** features tagged `wikidata=` the ship (wrecks, museum ships) or `subject:wikidata=` it (memorials, plaques), with their positions. These come from [QLever's copy of OpenStreetMap](https://qlever.dev/osm-planet), which answers in a fraction of a second; Overpass is the fallback.
   - **Other identifiers:** every external ID on the item (DNV, WreckSite, Lloyd's Register, Three Decks, Canmore, national registers, …), linked through each property's formatter URL. Works about the ship and Wikipedia coverage (with missing languages and a translate link) complete the page.
-- **Checks across sources.** The page compares Wikidata, Commons and OpenStreetMap:
+- **Checks across sources.** The page compares Wikidata, Commons, OpenStreetMap and NOAA:
   - **IMO check digit:** the seventh digit of an IMO number is a checksum, so typos are caught.
   - **MMSI and flag:** an MMSI starts with its country's maritime identification digits (P2979 on the flag state), so an MMSI and a flag that disagree mean one of them is out of date.
   - **Shared IMO or MMSI:** other items with the same number are flagged as possible duplicates (merge them) or earlier and later stages of the same hull (link them).
   - **Commons category and image:** checked that they exist on Commons.
   - **OpenStreetMap:** features linked to the item, whether the item has their OSM IDs, and whether the two positions agree.
+  - **NOAA charted wreck:** whether NOAA charts a wreck with the ship's name near Wikidata's position (ok within 5 km), farther away (a mismatch for a ship Wikidata records as sunk, a warning otherwise), or an unnamed wreck right at that position.
 - **Improve Wikidata.** Fixes that follow from the checks become QuickStatements you run under your own Wikimedia account:
   - the Commons category (P373) from the item's Commons sitelink;
   - the OSM node, way or relation ID (P11693, P10689, P402) of a feature tagged with the item;
-  - an image (P18) picked from the Commons photos.
+  - an image (P18) picked from the Commons photos;
+  - for a wreck without a position, the position of the one NOAA record with its name (P625), citing the Office of Coast Survey (Q5138211). It is offered unticked: check that it is the same ship first.
   
-  The item is read live first, so done edits drop out. Coordinates are never copied from OpenStreetMap: its licence (ODbL) is not compatible with Wikidata's CC0.
+  The item is read live first, so done edits drop out. Coordinates are never copied from OpenStreetMap: its licence (ODbL) is not compatible with Wikidata's CC0. NOAA's data is US government work, in the public domain.
 - **Class, shipbuilder and fleet pages.** A ship class (Q559026, or anything ships name in P289) lists its ships, ships per year, builders and flags. A shipbuilder (named in ships' manufacturer, P176) lists the ships it built, per year, with their types and classes. A shipping line, navy or other owner (operator P137 or owner P127 of watercraft) lists its fleet, past and present, by year built, type and builder.
 
 The scholarly pages of the template (people, works, venues) still work, for maritime historians and the literature about ships.
 
-Examples: [Titanic](https://andrawaag.github.io/boat-reconciliator/#/vessel/wikidata:Q25173), [Cutty Sark](https://andrawaag.github.io/boat-reconciliator/#/vessel/wikidata:Q171255), [Ever Given (IMO 9811000)](https://andrawaag.github.io/boat-reconciliator/#/vessel/imo:9811000), [the Olympic class](https://andrawaag.github.io/boat-reconciliator/#/class/wikidata:Q767166), [Harland and Wolff](https://andrawaag.github.io/boat-reconciliator/#/shipyard/wikidata:Q848977) and [Holland America Line](https://andrawaag.github.io/boat-reconciliator/#/operator/wikidata:Q1624735). Gil Eannes, a hospital ship turned museum (Q10335851), shows a typical fix: OpenStreetMap maps the museum ship as way 188629658 tagged with the item, and the page proposes adding that OSM way ID to Wikidata.
+Examples: [Titanic](https://andrawaag.github.io/boat-reconciliator/#/vessel/wikidata:Q25173), [Cutty Sark](https://andrawaag.github.io/boat-reconciliator/#/vessel/wikidata:Q171255), [Ever Given (IMO 9811000)](https://andrawaag.github.io/boat-reconciliator/#/vessel/imo:9811000), [the Olympic class](https://andrawaag.github.io/boat-reconciliator/#/class/wikidata:Q767166), [Harland and Wolff](https://andrawaag.github.io/boat-reconciliator/#/shipyard/wikidata:Q848977) and [Holland America Line](https://andrawaag.github.io/boat-reconciliator/#/operator/wikidata:Q1624735). Gil Eannes, a hospital ship turned museum (Q10335851), shows a typical fix: OpenStreetMap maps the museum ship as way 188629658 tagged with the item, and the page proposes adding that OSM way ID to Wikidata. [USS Massachusetts](https://andrawaag.github.io/boat-reconciliator/#/vessel/wikidata:Q2697074), scuttled off Pensacola, agrees with NOAA to within 34 m; the schooner [David Dows](https://andrawaag.github.io/boat-reconciliator/#/vessel/wikidata:Q64972671), lost in Lake Michigan in 1889, has no position on Wikidata and gets NOAA's as a proposal.
 
 ## Known limits of the boat additions
 
@@ -38,7 +41,20 @@ Examples: [Titanic](https://andrawaag.github.io/boat-reconciliator/#/vessel/wiki
 - **Page types:** an item is a vessel if Wikidata types it as a kind of watercraft, a class if it is a ship class or ships name it as their class, and a builder or fleet if watercraft name it as manufacturer, operator or owner. When an item is both (a company that built and ran ships), the larger role wins; add `#/shipyard/…` or `#/operator/…` to the URL to choose.
 - **Dates:** fleet tables use the year of launch, else of entry into service, else inception. Ships without any of these are listed last.
 - **OpenStreetMap:** QLever's copy is updated about weekly, so a tag added today may not show yet.
+- **NOAA wrecks:** see [NOAA wrecks](#noaa-wrecks) below.
 - **Large fleets:** builders and navies with thousands of ships take 10–30 seconds to load live; featured pages are pre-built snapshots.
+
+## NOAA wrecks
+
+NOAA's Office of Coast Survey publishes the wrecks and obstructions on its charts: about 42,000 records from the retired AWOIS database and the electronic chart cells (ENC). NOAA's own map services timed out when this was built (November 2026), so the site reads a public ArcGIS copy of the same layer, which allows cross-origin requests and point-and-radius queries. Set `noaaWrecks` in `site.config.json` to another ArcGIS FeatureServer layer URL with the same fields to use a different copy; remove `noaa` from `sources` to turn it off.
+
+What to expect:
+
+- **Coverage:** US waters only. The Titanic, Cutty Sark and Ever Given have no NOAA record.
+- **Names:** only about 2,700 records carry a name, and fewer than 250 a year sunk. Names are matched after upper-casing and dropping prefixes (USS, SS, HMS, …) and punctuation, so `U-215` matches `U 215`. Common names (`REPUBLIC`, `SUCCESS`) match several wrecks; the page lists them all and only proposes a position when exactly one record has the name.
+- **Unnamed records:** harbours are full of unnamed obstructions, so records without the name are listed only within 1 km, five at most.
+- **Same name, other ship:** a match is a lead, not proof. The proposal is unticked for that reason.
+- **Licence:** US government data, public domain. The ArcGIS copy is a third party's; NOAA's Office of Coast Survey remains the authority.
 
 The documentation below is the template's, and applies here too.
 
@@ -60,11 +76,12 @@ Snapshots refresh every Monday. Run the workflow by hand (**Actions → site →
 |---|---|
 | `title`, `tagline`, `intro` | Site name, home page heading and intro text |
 | `accent` | Accent colour (any CSS colour); the dark theme derives from it |
-| `sources` | Which of `wikidata`, `commons`, `osm`, `orcid`, `crossref`, `datacite`, `openalex`, `obo`, `ols`, `rdfportal`, `pubmed` to use |
+| `sources` | Which of `wikidata`, `commons`, `osm`, `noaa`, `orcid`, `crossref`, `datacite`, `openalex`, `obo`, `ols`, `rdfportal`, `pubmed` to use |
 | `wikidataEndpoint` | Wikidata SPARQL endpoint (default QLever, which holds the full graph) |
 | `liveHarvest` | `false` limits the site to its snapshots: no live API calls from visitors' browsers |
 | `wikidataCreate` | `false` hides the "Not on Wikidata yet" panel on author pages (default `true`) |
 | `wikidataWorks` | `false` hides the "Works missing on Wikidata" panel on author pages (default `true`) |
+| `noaaWrecks` | ArcGIS FeatureServer layer for NOAA's wrecks and obstructions (default: a public copy of NOAA's layer; see [NOAA wrecks](#noaa-wrecks)) |
 | `wikidataFixes` | `false` hides the "Improve Wikidata" panel on ontology term and topic pages (default `true`) |
 | `wikipediaCoverage` | `false` hides the "Wikipedia articles" and Orphanet "Subtypes" panels (default `true`) |
 | `wikipediaLanguages` | languages checked for missing Wikipedia articles, first one preselected (default: en, de, fr, es, it, nl, pt, pl, ru, ja, zh, ar) |
@@ -326,7 +343,7 @@ Write `src/adapters/<name>.js` returning quads in graph `urn:koetai-reconciliato
 
 This project was developed with substantial help from generative AI, as recommended by emerging norms for disclosing AI use in research software.
 
-- **Tool:** Claude Code, running the Claude Opus 5.5 model (Anthropic), in November 2026. The boat fork (adapters for Wikidata vessel statements, Commons and OpenStreetMap, the checks and the class, builder and fleet pages) was written the same way.
+- **Tool:** Claude Code, running the Claude Opus 5.5 model (Anthropic), in November 2026. The boat fork (adapters for Wikidata vessel statements, Commons, OpenStreetMap and NOAA's charted wrecks, the checks and the class, builder and fleet pages) was written the same way.
 - **What the AI did:**
   - proposed the architecture: source adapters → schema.org named graphs → reconciliation → Comunica over static or live graphs, packaged as a configurable template;
   - wrote the code, SPARQL queries, GitHub workflow and this README;
@@ -340,4 +357,4 @@ If you build an instance from this template, keep this section and add your own 
 
 ## License
 
-MIT, see [LICENSE](LICENSE). Data shown by an instance keeps its source licences: Wikidata, ORCID public data and OpenAlex are CC0; Wikimedia Commons files carry their own licences (shown on each file's page); OpenStreetMap data is ODbL (© OpenStreetMap contributors); Crossref and DataCite metadata are generally CC0 or open. OBO ontologies are mostly CC BY 4.0 or CC0 (check each ontology). SNOMED CT, ICD and UMLS codes appear only as identifiers taken from OBO cross-references and Wikidata; their content is licensed separately.
+MIT, see [LICENSE](LICENSE). Data shown by an instance keeps its source licences: Wikidata, ORCID public data and OpenAlex are CC0; Wikimedia Commons files carry their own licences (shown on each file's page); OpenStreetMap data is ODbL (© OpenStreetMap contributors); NOAA's wrecks and obstructions are US government data in the public domain; Crossref and DataCite metadata are generally CC0 or open. OBO ontologies are mostly CC BY 4.0 or CC0 (check each ontology). SNOMED CT, ICD and UMLS codes appear only as identifiers taken from OBO cross-references and Wikidata; their content is licensed separately.

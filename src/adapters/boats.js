@@ -377,6 +377,68 @@ async function osmOverpass(ctx, qid) {
   return (j.elements ?? []).map((el) => feature(qid, el.type, el.id, el.tags ?? {}, el.lat ?? el.center?.lat, el.lon ?? el.center?.lon));
 }
 
+
+// ---------- NOAA charted wrecks ----------
+// NOAA's wrecks and obstructions (US waters, Great Lakes included): the retired AWOIS database plus wrecks from NOAA's
+// electronic charts, as one ArcGIS point layer. NOAA's own servers (wrecks.nauticalcharts.noaa.gov, ENC Direct) don't
+// answer reliably, so the default is a public ArcGIS Online copy; set "noaaWrecks" in site.config.json to another
+// layer with the same fields (objectname, objectcate, yearsunk, comment, datasource). US government data: public domain.
+export const NOAA_WRECKS = "https://services6.arcgis.com/q5QaVUsTCQBahQDF/arcgis/rest/services/Global_Wrecks_and_Obstructions/FeatureServer/1";
+const COAST_SURVEY = "Q5138211"; // Office of Coast Survey, cited for positions taken from NOAA
+const SHIPWRECK = "Q852190", WRECK_EVENTS = new Set(["Q906512", "Q30880545", "Q1786766"]); // shipwreck; shipwrecking, sinking, scuttling
+const PREFIX = /^(USS|USNS|USCGC|USC&GS|HMS|HMCS|HMAS|RMS|SS|SV|MV|MS|FV|TS|NS|S S|M V|F V|TUG|BARGE|SCHOONER|STEAMER|STEAMSHIP|YACHT|SUB)\s+/;
+export const wreckName = (s) => String(s ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toUpperCase().replace(/[./\\-]/g, " ").replace(/[^A-Z0-9 ]/g, "").replace(/\s+/g, " ").trim().replace(PREFIX, "").trim();
+/** Whether Wikidata describes the item as a wreck: a shipwreck, or a ship with a shipwrecking, sinking or scuttling event. */
+export function isWreck(facts) {
+  if ((facts?.claims?.P31 ?? []).some((st) => st.mainsnak?.datavalue?.value?.id === SHIPWRECK)) return true;
+  return (facts?.claims?.P793 ?? []).some((st) => st.rank !== "deprecated" && WRECK_EVENTS.has(st.mainsnak?.datavalue?.value?.id));
+}
+
+/** NOAA wrecks with the vessel's name (any of its names), and any charted wreck within 5 km of its Wikidata position. */
+export async function harvestNoaa(ctx, qid, facts) {
+  const base = ctx.noaaWrecks || NOAA_WRECKS;
+  const out = quadSink(ctx.DF, "noaa");
+  const main = iri.wikidata(qid);
+  const names = [...new Set([facts?.label, ...(facts?.claims?.P2561 ?? []), ...(facts?.claims?.P1448 ?? [])]
+    .map((x) => (typeof x === "string" ? x : x?.mainsnak?.datavalue?.value?.text)).map(wreckName).filter((n) => n.length >= 3))].slice(0, 6);
+  const c = facts?.values("P625")?.[0];
+  const coord = c ? { lat: c.latitude, lon: c.longitude } : null;
+  const query = (params) => json(ctx, `${base}/query?${new URLSearchParams({ outFields: "FID,objectname,objectcate,yearsunk,comment,datasource,sourcereco", returnGeometry: "true", outSR: "4326", f: "json", ...params })}`);
+  const [byName, near] = await Promise.all([
+    names.length ? query({ where: names.map((n) => `UPPER(objectname) LIKE '%${n.replace(/ /g, "%")}%'`).join(" OR "), resultRecordCount: "50" }) : null,
+    coord ? query({ geometry: `${coord.lon},${coord.lat}`, geometryType: "esriGeometryPoint", inSR: "4326", distance: "5000", units: "esriSRUnit_Meter", spatialRel: "esriSpatialRelIntersects", resultRecordCount: "50" }) : null,
+  ]);
+  if (byName?.error || near?.error) throw new Error(`NOAA wrecks: ${(byName?.error ?? near?.error).message || "query failed"}`);
+  const wrecks = new Map();
+  for (const f of [...(byName?.features ?? []), ...(near?.features ?? [])]) {
+    const a = f.attributes, lat = f.geometry?.y, lon = f.geometry?.x;
+    if (wrecks.has(a.FID) || lat == null) continue;
+    const named = String(a.objectname ?? "").trim();
+    const nameMatch = !!named && names.includes(wreckName(named));
+    const dist = coord ? km(coord, { lat, lon }) : null;
+    // Keep name matches, and other charted wrecks only when very close: harbours are full of unnamed obstructions.
+    if (!nameMatch && !(dist != null && dist <= 1)) continue; // also drops LIKE hits on other names ("ARIZONA STAR")
+    wrecks.set(a.FID, { id: String(a.FID), name: named || null, nameMatch, lat, lon, dist, category: String(a.objectcate ?? "").trim() || "wreck or obstruction",
+      year: /^\d{3,4}$/.test(String(a.yearsunk ?? "")) && a.yearsunk !== "0" ? String(a.yearsunk) : null,
+      source: a.datasource === "AWOIS" ? "AWOIS" : `chart ${a.datasource}`, comment: String(a.comment ?? "").replace(/\s+/g, " ").trim().slice(0, 300) });
+  }
+  const list = [...wrecks.values()].sort((a, b) => (b.nameMatch - a.nameMatch) || ((a.dist ?? 1e9) - (b.dist ?? 1e9)));
+  const shown = [...list.filter((w) => w.nameMatch).slice(0, 20), ...list.filter((w) => !w.nameMatch).slice(0, 5)];
+  for (const w of shown) {
+    const n = `urn:koetai-reconciliator:noaa-wreck:${w.id}`;
+    out.add(main, K + "noaaWreck", n);
+    out.lit(n, S + "name", w.name ?? "(unnamed)");
+    out.lit(n, K + "category", w.category);
+    out.lit(n, K + "matchedBy", w.nameMatch && w.dist != null && w.dist <= 5 ? "name and position" : w.nameMatch ? "name" : "position");
+    out.lit(n, K + "lat", w.lat.toFixed(5)); out.lit(n, K + "lon", w.lon.toFixed(5));
+    if (w.dist != null) out.lit(n, K + "distanceKm", w.dist < 10 ? w.dist.toFixed(2) : w.dist.toFixed(0));
+    if (w.year) out.lit(n, K + "yearSunk", w.year);
+    out.lit(n, K + "noaaSource", w.source);
+    if (w.comment) out.lit(n, S + "description", w.comment);
+  }
+  return { quads: out.quads, noaa: { list, coord, names } };
+}
+
 // ---------- checks across sources ----------
 /** IMO number check digit: the 7th digit is the last digit of 7·d1 + 6·d2 + … + 2·d6. */
 export function imoValid(imo) {
@@ -397,7 +459,7 @@ const OSM_PROP = { node: "P11693", way: "P10689", relation: "P402" };
  * statuses: ok, mismatch, missing, warning. Edits that follow from a check become kr:proposal nodes
  * (property, value, reason), turned into QuickStatements by the page.
  */
-export function vesselChecks(ctx, qid, facts, commons, osm) {
+export function vesselChecks(ctx, qid, facts, commons, osm, noaa) {
   const out = quadSink(ctx.DF, "reconcile");
   const main = iri.wikidata(qid);
   let n = 0, np = 0;
@@ -477,6 +539,32 @@ export function vesselChecks(ctx, qid, facts, commons, osm) {
       }
     }
     if (about.length) check("OpenStreetMap", "ok", `${about.length} feature${about.length === 1 ? "" : "s"} (memorials, plaques, …) name this item as subject:wikidata.`);
+  }
+
+  // NOAA charted wrecks (US waters).
+  if (noaa) {
+    const wreck = isWreck(facts);
+    const fmt = (d) => (d < 1 ? `${Math.round(d * 1000)} m` : `${d.toFixed(d < 10 ? 1 : 0)} km`);
+    const at = (w) => `https://www.openstreetmap.org/?mlat=${w.lat.toFixed(5)}&mlon=${w.lon.toFixed(5)}#map=12/${w.lat.toFixed(5)}/${w.lon.toFixed(5)}`;
+    const named = noaa.list.filter((w) => w.nameMatch);
+    const label = (w) => `${w.name} (${w.category}, ${w.source}${w.year ? `, sunk ${w.year}` : ""})`;
+    if (noaa.coord) {
+      const close = named.filter((w) => w.dist <= 5);
+      const far = named.filter((w) => w.dist > 5);
+      for (const w of close) check("NOAA charted wreck", "ok", `NOAA charts ${label(w)} ${fmt(w.dist)} from Wikidata's position.`, at(w));
+      const nearish = far.filter((w) => w.dist <= 50);
+      if (!close.length && !wreck && nearish.length) check("NOAA charted wreck", "warning", `NOAA charts a wreck with this name ${fmt(nearish[0].dist)} from Wikidata's position: ${label(nearish[0])}. If this ship sank there, one of the positions is off (and Wikidata could record the sinking as a significant event, P793).`, at(nearish[0]));
+      if (!close.length && far.length && wreck) check("NOAA charted wreck", far[0].dist <= 50 ? "mismatch" : "warning", `NOAA charts a wreck with this name ${fmt(far[0].dist)} from Wikidata's position: ${label(far[0])}${far.length > 1 ? `, and ${far.length - 1} more further away` : ""}. Either one position is wrong, or it is another ship with the same name.`, at(far[0]));
+      const unnamed = noaa.list.filter((w) => !w.nameMatch && w.dist <= 1);
+      if (!close.length && unnamed.length && wreck) check("NOAA charted wreck", "warning", `No NOAA wreck has this name, but NOAA charts ${unnamed.length} unnamed or differently named wreck${unnamed.length === 1 ? "" : "s"} within 1 km, the nearest ${fmt(unnamed[0].dist)} away (${unnamed[0].name ?? "unnamed"}, ${unnamed[0].source}). It may be this ship.`, at(unnamed[0]));
+    } else if (named.length && wreck) {
+      if (named.length === 1) {
+        const w = named[0];
+        check("NOAA charted wreck", "missing", `Wikidata has no position for this wreck. NOAA charts ${label(w)} at ${w.lat.toFixed(5)}, ${w.lon.toFixed(5)}. Check that it is the same ship before adding the position below.`, at(w));
+        propose("P625", `${w.lat.toFixed(6)}, ${w.lon.toFixed(6)}`, `position of the NOAA wreck record ${w.name} (${w.source}), citing the Office of Coast Survey; unticked: check it is the same ship first`,
+          { qs: `@${w.lat.toFixed(6)}/${w.lon.toFixed(6)}\tS248\t${COAST_SURVEY}\tS813\t+${new Date().toISOString().slice(0, 10)}T00:00:00Z/11`, off: "true" });
+      } else check("NOAA charted wreck", "warning", `Wikidata has no position for this wreck. NOAA charts ${named.length} wrecks with this name: ${named.slice(0, 4).map((w) => `${w.lat.toFixed(3)}, ${w.lon.toFixed(3)}`).join("; ")}. Which one, if any, is this ship needs checking by hand.`, at(named[0]));
+    }
   }
   return out.quads;
 }

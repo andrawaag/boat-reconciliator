@@ -7,38 +7,44 @@
       "file": "data/vessel/wikidata_Q25173.nq.gz",
       "quads": 722,
       "bytes": 10617,
-      "generated": "2026-11-21T09:10:24.465Z",
+      "generated": "2026-11-21T10:08:53.499Z",
       "endpoint": "https://qlever.dev/api/wikidata",
       "log": [
         {
           "source": "wikidata",
           "what": "vessel neighbourhood",
           "quads": 493,
-          "ms": 666
+          "ms": 539
         },
         {
           "source": "wikidata",
           "what": "statements (live) and sister ships",
           "quads": 186,
-          "ms": 13995
+          "ms": 5418
         },
         {
           "source": "osm",
           "what": "features tagged with this item",
           "quads": 12,
-          "ms": 99
+          "ms": 112
         },
         {
           "source": "commons",
           "what": "category and images",
           "quads": 78,
-          "ms": 261
+          "ms": 253
+        },
+        {
+          "source": "noaa",
+          "what": "charted wrecks by name and position",
+          "quads": 0,
+          "ms": 356
         },
         {
           "source": "reconcile",
-          "what": "checks across Wikidata, Commons and OpenStreetMap",
+          "what": "checks across Wikidata, Commons, OpenStreetMap and NOAA",
           "quads": 20,
-          "ms": 1
+          "ms": 2
         }
       ]
     },
@@ -49,38 +55,44 @@
       "file": "data/vessel/wikidata_Q171255.nq.gz",
       "quads": 428,
       "bytes": 5575,
-      "generated": "2026-11-21T09:06:09.870Z",
+      "generated": "2026-11-21T10:08:55.587Z",
       "endpoint": "https://qlever.dev/api/wikidata",
       "log": [
         {
           "source": "wikidata",
           "what": "vessel neighbourhood",
           "quads": 147,
-          "ms": 385
+          "ms": 497
         },
         {
           "source": "wikidata",
           "what": "statements (live) and sister ships",
           "quads": 175,
-          "ms": 990
+          "ms": 1182
         },
         {
           "source": "osm",
           "what": "features tagged with this item",
           "quads": 6,
-          "ms": 99
+          "ms": 116
         },
         {
           "source": "commons",
           "what": "category and images",
           "quads": 78,
-          "ms": 192
+          "ms": 214
+        },
+        {
+          "source": "noaa",
+          "what": "charted wrecks by name and position",
+          "quads": 0,
+          "ms": 391
         },
         {
           "source": "reconcile",
-          "what": "checks across Wikidata, Commons and OpenStreetMap",
+          "what": "checks across Wikidata, Commons, OpenStreetMap and NOAA",
           "quads": 27,
-          "ms": 0
+          "ms": 1
         }
       ]
     },
@@ -91,36 +103,42 @@
       "file": "data/vessel/imo_9811000.nq.gz",
       "quads": 173,
       "bytes": 2608,
-      "generated": "2026-11-21T09:07:01.257Z",
+      "generated": "2026-11-21T10:09:07.149Z",
       "endpoint": "https://qlever.dev/api/wikidata",
       "log": [
         {
           "source": "wikidata",
           "what": "vessel neighbourhood",
           "quads": 50,
-          "ms": 402
+          "ms": 323
         },
         {
           "source": "wikidata",
           "what": "statements (live) and sister ships",
           "quads": 91,
-          "ms": 3980
+          "ms": 10768
         },
         {
           "source": "osm",
           "what": "features tagged with this item",
           "quads": 0,
-          "ms": 104
+          "ms": 101
+        },
+        {
+          "source": "noaa",
+          "what": "charted wrecks by name and position",
+          "quads": 0,
+          "ms": 237
         },
         {
           "source": "commons",
           "what": "category and images",
           "quads": 21,
-          "ms": 46916
+          "ms": 413
         },
         {
           "source": "reconcile",
-          "what": "checks across Wikidata, Commons and OpenStreetMap",
+          "what": "checks across Wikidata, Commons, OpenStreetMap and NOAA",
           "quads": 25,
           "ms": 0
         }
@@ -222,5 +240,5 @@
     "mmsi:353136000": "imo:9811000",
     "imo:5375992": "wikidata:Q1624735"
   },
-  "generated": "2026-11-21T09:10:24.467Z"
+  "generated": "2026-11-21T10:09:07.150Z"
 }

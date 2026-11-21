@@ -16,7 +16,7 @@ const engine = new QueryEngine();
 const config = normalizeConfig(JSON.parse(await loadText("site.config.json")));
 const key = parseKey(process.argv[2] ?? "");
 if (!key) { console.error("usage: npm run check -- <orcid:…|doi:…|issn:…|wikidata:Q…> [aspect]"); process.exit(2); }
-const ctx = { engine, DF: DataFactory, fetch, loadText, endpoint: process.env.WIKIDATA_ENDPOINT || config.wikidataEndpoint, sources: config.sources, headers: { "User-Agent": "koetai-reconciliator-check/0.2" }, openalexKey: process.env.OPENALEX_API_KEY };
+const ctx = { engine, DF: DataFactory, fetch, loadText, endpoint: process.env.WIKIDATA_ENDPOINT || config.wikidataEndpoint, sources: config.sources, noaaWrecks: config.noaaWrecks, headers: { "User-Agent": "koetai-reconciliator-check/0.2" }, openalexKey: process.env.OPENALEX_API_KEY };
 
 const t0 = Date.now();
 const g = await harvest(ctx, key, process.argv[3]);

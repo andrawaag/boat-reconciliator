@@ -490,7 +490,7 @@ async function missingWorksPanel(graph) {
 }
 
 // ---------- Improve Wikidata (ontology terms) ----------
-const harvestContext = () => ({ engine, DF: DataFactory, fetch: window.fetch.bind(window), loadText, endpoint: endpoints[settings.endpoint].url, sources: config.sources, headers: {} });
+const harvestContext = () => ({ engine, DF: DataFactory, fetch: window.fetch.bind(window), loadText, endpoint: endpoints[settings.endpoint].url, sources: config.sources, noaaWrecks: config.noaaWrecks, headers: {} });
 
 async function termFixPanel(graph) {
   const run = async (file) => (await engine.queryBindings(fillPanel(await loadText("queries/prefixes.rq"), await loadText(file), graph.iri), { sources: [graph.store], unionDefaultGraph: true })).toArray();
@@ -572,17 +572,17 @@ async function termFixPanel(graph) {
 // ---------- Improve Wikidata (vessels) ----------
 // Edits that follow from the checks across sources (Commons category from the sitelink, OpenStreetMap IDs of features
 // tagged with the item), plus an image picked from the Commons category. Read live first, so done edits drop out.
-const BOAT_PROPS = { P373: "Commons category", P402: "OpenStreetMap relation ID", P10689: "OpenStreetMap way ID", P11693: "OpenStreetMap node ID", P18: "image" };
+const BOAT_PROPS = { P625: "coordinate location", P373: "Commons category", P402: "OpenStreetMap relation ID", P10689: "OpenStreetMap way ID", P11693: "OpenStreetMap node ID", P18: "image" };
 async function boatFixPanel(graph) {
   const qid = pageQid(graph);
   if (!qid) return null;
   const run = async (q) => (await engine.queryBindings(`${await loadText("queries/prefixes.rq")}\n${q}`, { sources: [graph.store], unionDefaultGraph: true })).toArray();
-  const proposals = (await run(`SELECT ?property ?value ?reason WHERE { <${graph.iri}> kr:proposal ?p . ?p kr:property ?property ; kr:value ?value ; schema:description ?reason }`))
-    .map((b) => ({ property: b.get("property").value, value: b.get("value").value, reason: b.get("reason").value, on: true }));
+  const proposals = (await run(`SELECT ?property ?value ?reason ?qs ?off WHERE { <${graph.iri}> kr:proposal ?p . ?p kr:property ?property ; kr:value ?value ; schema:description ?reason OPTIONAL { ?p kr:qs ?qs } OPTIONAL { ?p kr:off ?off } }`))
+    .map((b) => ({ property: b.get("property").value, value: b.get("value").value, reason: b.get("reason").value, qs: b.get("qs")?.value, on: !b.get("off") }));
   const files = (await run(`SELECT DISTINCT ?file ?thumb ?name WHERE { <${graph.iri}> kr:commonsFile ?file . ?file kr:thumbnail ?thumb ; schema:name ?name }`))
     .map((b) => ({ file: decodeURIComponent(b.get("file").value.split("/wiki/File:")[1] ?? "").replace(/_/g, " "), thumb: b.get("thumb").value, name: b.get("name").value })).filter((f) => f.file);
-  const held = await claimValuesLive(fetch, qid, ["P18", "P373", "P402", "P10689", "P11693"]).catch(() => new Map());
-  const open = proposals.filter((p) => !held.get(p.property)?.size || (p.property !== "P373" && !held.get(p.property).has(p.value.toUpperCase())));
+  const held = await claimValuesLive(fetch, qid, ["P18", "P373", "P402", "P10689", "P11693", "P625"]).catch(() => new Map());
+  const open = proposals.filter((p) => !held.get(p.property)?.size || (!["P373", "P625"].includes(p.property) && !held.get(p.property).has(p.value.toUpperCase())));
   const pickImage = !held.get("P18")?.size && files.length > 0;
   if (!open.length && !pickImage) return null;
 
@@ -590,13 +590,13 @@ async function boatFixPanel(graph) {
   const textarea = h("textarea", { class: "qs", rows: 4, spellcheck: "false", "aria-label": "QuickStatements commands" });
   const q = (v) => `"${String(v).replace(/"/g, "")}"`;
   const regenerate = () => {
-    textarea.value = [...open.filter((p) => p.on).map((p) => `${qid}\t${p.property}\t${q(p.value)}`), image && `${qid}\tP18\t${q(image)}`].filter(Boolean).join("\n");
+    textarea.value = [...open.filter((p) => p.on).map((p) => `${qid}\t${p.property}\t${p.qs ?? q(p.value)}`), image && `${qid}\tP18\t${q(image)}`].filter(Boolean).join("\n");
   };
   const body = h("div", { class: "panel-body" });
   body.append(
     h("p", {}, "These edits follow from the checks above. You run them with ", h("a", { href: "https://www.wikidata.org/wiki/Help:QuickStatements", target: "_blank", rel: "noopener" }, "QuickStatements"), " under your own Wikimedia account."),
     open.length ? h("ul", { class: "matches" }, open.map((p) => h("li", {}, h("label", {},
-      h("input", { type: "checkbox", checked: true, onchange: (e) => { p.on = e.target.checked; regenerate(); } }), " ",
+      h("input", { type: "checkbox", checked: p.on, onchange: (e) => { p.on = e.target.checked; regenerate(); } }), " ",
       h("b", {}, `${BOAT_PROPS[p.property] ?? p.property} (${p.property}) = ${p.value}`), h("span", { class: "muted" }, ` · ${p.reason}`))))) : "",
     pickImage ? h("div", {}, h("h3", {}, "Pick an image (P18)"), h("p", { class: "muted small" }, "The item has no image. Choose a photo of the vessel itself from its Commons category, or none."),
       h("div", { class: "gallery pick" }, files.slice(0, 18).map((f) => h("label", { class: "figure-pick" },
@@ -607,7 +607,7 @@ async function boatFixPanel(graph) {
     h("div", { class: "actions" },
       h("button", { type: "button", class: "primary", onclick: () => textarea.value && window.open(quickStatementsUrl(textarea.value), "_blank", "noopener") }, "Open in QuickStatements"),
       h("button", { type: "button", onclick: async (e) => { try { await navigator.clipboard.writeText(textarea.value); e.target.textContent = "Copied"; } catch { textarea.select(); } } }, "Copy commands")),
-    h("p", { class: "muted small" }, "OpenStreetMap IDs link the item to the mapped wreck or museum ship. Coordinates are not copied from OpenStreetMap: its licence (ODbL) is not compatible with Wikidata's CC0. After running the edits, refresh this page to see the checks pass."));
+    h("p", { class: "muted small" }, "OpenStreetMap IDs link the item to the mapped wreck or museum ship. Coordinates are never copied from OpenStreetMap, whose licence (ODbL) is not compatible with Wikidata's CC0; a position from NOAA (US government data, public domain) is offered unticked and cites the Office of Coast Survey. After running the edits, refresh this page to see the checks pass."));
   regenerate();
   return h("section", { class: "panel wide wd-create", id: "panel-improve-wikidata" },
     h("header", {}, h("h2", {}, "Improve Wikidata"), h("span", { class: "timing" }, `${open.length + (pickImage ? 1 : 0)} possible edit${open.length + (pickImage ? 1 : 0) === 1 ? "" : "s"}`)), body);

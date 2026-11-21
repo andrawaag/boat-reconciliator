@@ -23,7 +23,7 @@ const ctx = {
   fetch,
   loadText,
   endpoint: process.env.WIKIDATA_ENDPOINT || config.wikidataEndpoint,
-  sources: config.sources,
+  sources: config.sources, noaaWrecks: config.noaaWrecks,
   headers: { "User-Agent": "koetai-reconciliator-snapshot/0.3 (static site generator)" },
   openalexKey: process.env.OPENALEX_API_KEY || undefined,
 };

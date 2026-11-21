@@ -1,20 +1,48 @@
 {
   "title": "boat reconciliator",
   "tagline": "Ships and boats, reconciled across open data",
-  "intro": "This site gathers what open data says about a ship or boat, its class, its builder and its operators: Wikidata's statements (read live, with dated launches, renamings, owners and flags), images from Wikimedia Commons, wrecks and museum ships on OpenStreetMap, and works about it. It merges them into one RDF graph, draws the panels in your browser with Comunica, and checks the sources against each other: IMO check digits, MMSI country digits against the flag, items that share an IMO number, Commons categories and OpenStreetMap IDs. Fixes become QuickStatements that you run under your own Wikimedia account.",
+  "intro": "This site gathers what open data says about a ship or boat, its class, its builder and its operators: Wikidata's statements (read live, with dated launches, renamings, owners and flags), images from Wikimedia Commons, wrecks and museum ships on OpenStreetMap, NOAA's charted wrecks in US waters, and works about it. It merges them into one RDF graph, draws the panels in your browser with Comunica, and checks the sources against each other: IMO check digits, MMSI country digits against the flag, items that share an IMO number, Commons categories and OpenStreetMap IDs. Fixes become QuickStatements that you run under your own Wikimedia account.",
   "accent": "#1f5f8b",
-  "sources": ["wikidata", "commons", "osm", "openalex", "crossref", "datacite", "orcid", "pubmed"],
+  "sources": [
+    "wikidata",
+    "commons",
+    "osm",
+    "noaa",
+    "openalex",
+    "crossref",
+    "datacite",
+    "orcid",
+    "pubmed"
+  ],
   "wikidataEndpoint": "https://qlever.dev/api/wikidata",
   "liveHarvest": true,
   "wikidataFixes": false,
   "wikipediaCoverage": false,
   "seeds": [
-    { "key": "wikidata:Q25173", "aspect": "vessel" },
-    { "key": "wikidata:Q171255", "aspect": "vessel" },
-    { "key": "imo:9811000", "aspect": "vessel" },
-    { "key": "wikidata:Q767166", "aspect": "class" },
-    { "key": "wikidata:Q848977", "aspect": "shipyard" },
-    { "key": "wikidata:Q1624735", "aspect": "operator" }
+    {
+      "key": "wikidata:Q25173",
+      "aspect": "vessel"
+    },
+    {
+      "key": "wikidata:Q171255",
+      "aspect": "vessel"
+    },
+    {
+      "key": "imo:9811000",
+      "aspect": "vessel"
+    },
+    {
+      "key": "wikidata:Q767166",
+      "aspect": "class"
+    },
+    {
+      "key": "wikidata:Q848977",
+      "aspect": "shipyard"
+    },
+    {
+      "key": "wikidata:Q1624735",
+      "aspect": "operator"
+    }
   ],
   "panels": {}
 }

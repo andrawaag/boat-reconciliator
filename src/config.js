@@ -17,6 +17,7 @@ export const DEFAULT_CONFIG = {
   searchOntologies: null, // OLS ontologies the search box covers (null: all)
   wikipediaCoverage: true, // Wikipedia articles and subtype panels on disease pages
   wikipediaLanguages: ["en", "de", "fr", "es", "it", "nl", "pt", "pl", "ru", "ja", "zh", "ar"],
+  noaaWrecks: null, // ArcGIS layer with NOAA wrecks and obstructions (null: the default in src/adapters/boats.js)
   seeds: [],
   panels: {},
 };

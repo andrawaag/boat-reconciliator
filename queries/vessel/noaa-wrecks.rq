@@ -1,0 +1,5 @@
+# NOAA's charted wrecks with this vessel's name, or within 5 km of its Wikidata position (US waters, Great Lakes included)
+SELECT ?wreck ?matchedBy ?distanceKm ?category ?yearSunk ?source ?lat ?lon ?note WHERE {
+  <{{iri}}> kr:noaaWreck ?w . ?w schema:name ?wreck ; kr:matchedBy ?matchedBy ; kr:category ?category ; kr:noaaSource ?source ; kr:lat ?lat ; kr:lon ?lon
+  OPTIONAL { ?w kr:distanceKm ?distanceKm } OPTIONAL { ?w kr:yearSunk ?yearSunk } OPTIONAL { ?w schema:description ?note }
+} ORDER BY DESC(?matchedBy = "name and position") ?matchedBy xsd:decimal(?distanceKm)

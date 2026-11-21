@@ -20,6 +20,7 @@
   --pubmed: #20558a;
   --commons: #2a7f62;
   --osm: #7a9a2a;
+  --noaa: #0f4c81;
   --snapshot: #6c5aa8;
   --reconcile: #707070;
   --radius: 10px;
@@ -49,6 +50,7 @@
     --pubmed: #8fbbe8;
     --commons: #7fd1b0;
     --osm: #c0dd6e;
+    --noaa: #7fb0e0;
     --snapshot: #b4a6e8;
     --reconcile: #a8a8a8;
     color-scheme: dark;
@@ -117,6 +119,7 @@ h2 { font-size: 15px; margin: 0; }
 .src-pubmed { background: var(--pubmed); }
 .src-commons { background: var(--commons); }
 .src-osm { background: var(--osm); }
+.src-noaa { background: var(--noaa); }
 .src-snapshot { background: var(--snapshot); }
 .src-reconcile { background: var(--reconcile); }
 @media (prefers-color-scheme: dark) { .badge { color: #111; } }
