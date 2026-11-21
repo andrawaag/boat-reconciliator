@@ -1,0 +1,5 @@
+# Ships listed here, counted by builder
+SELECT ?builder (SAMPLE(?n) AS ?builderLabel) (COUNT(DISTINCT ?ship) AS ?ships) WHERE {
+  ?ship kr:listedUnder <{{iri}}> ; kr:builder ?builder
+  OPTIONAL { ?builder schema:name ?n }
+} GROUP BY ?builder ORDER BY DESC(?ships) LIMIT 100

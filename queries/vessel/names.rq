@@ -1,0 +1,5 @@
+# The vessel's names over time (P2561 name, P1448 official name)
+SELECT ?name ?language ?from ?until WHERE {
+  <{{iri}}> kr:nameRecord ?r . ?r schema:name ?name
+  OPTIONAL { ?r kr:language ?language } OPTIONAL { ?r kr:start ?from } OPTIONAL { ?r kr:end ?until }
+} ORDER BY ?from

@@ -4,10 +4,11 @@
 import { NS, iri, quadSink, dateLiteral } from "../model.js";
 import { aspectForTypes, TYPE_TO_ASPECT } from "../aspects.js";
 import { entityQuadsLive } from "../wikidata-live.js";
+import { detectBoatAspect, BOAT_ASPECTS } from "./boats.js";
 import { WD_PROPS, VOCABS, addMapping, canonicalPrefix, parseTargetIri, target, wikidataFormsForObo } from "../vocab.js";
 
 const S = NS.schema;
-const LINK = { author: "P50", topic: "P921", venue: "P1433", term: "P921" };
+const LINK = { author: "P50", topic: "P921", venue: "P1433", term: "P921", vessel: "P921", class: "P921", shipyard: "P921", operator: "P921" };
 const PREDICATES = {
   [NS.rdfs + "label"]: S + "name",
   [S + "description"]: S + "description",
@@ -47,7 +48,7 @@ function polite(fn) {
 }
 
 export async function lookupQid(ctx, scheme, value) {
-  const prop = { orcid: "P496", doi: "P356", pmid: "P698", issn: "P236", openalex: "P10283" }[scheme];
+  const prop = { orcid: "P496", doi: "P356", pmid: "P698", issn: "P236", openalex: "P10283", imo: "P458", mmsi: "P587" }[scheme];
   if (!prop) return null;
   const v = scheme === "doi" ? value.toUpperCase() : value; // Wikidata stores DOIs upper-case
   const q = await template(ctx, "lookup", { prop, value: v });
@@ -95,7 +96,11 @@ export async function matchQidByCodes(ctx, codes) {
 export async function detectAspect(ctx, qid) {
   const q = await template(ctx, "types", { q: qid });
   const rows = await polite(async () => (await ctx.engine.queryBindings(q, { sources: source(ctx), httpTimeout: 60000 })).toArray());
-  return aspectForTypes(rows.map((r) => r.get("type").value));
+  const types = rows.map((r) => r.get("type").value);
+  const plain = aspectForTypes(types);
+  if (plain !== "topic") return plain;
+  // Not a person, work or venue: a vessel, ship class, shipbuilder or ship operator?
+  return (await polite(() => detectBoatAspect(ctx, qid)).catch(() => null)) ?? "topic";
 }
 
 // opts.obo: the OBO id of the page's own term, so its Wikidata property becomes identity (sameAs), not a mapping.
@@ -112,7 +117,7 @@ export async function harvestWikidata(ctx, qid, aspect, opts = {}) {
   const main = iri.wikidata(qid);
   const live = raw.some((q) => q.subject.value === main) ? [] : await entityQuadsLive(ctx.fetch, ctx.DF, qid).catch(() => []);
   raw.push(...live);
-  if (aspect === "author") return mapToSchema(ctx.DF, raw, qid, aspect).concat(await externalIds(ctx, qid).catch(() => []));
+  if (aspect === "author" || BOAT_ASPECTS.has(aspect)) return mapToSchema(ctx.DF, raw, qid, aspect).concat(await externalIds(ctx, qid).catch(() => []));
   if (!["term", "topic"].includes(aspect)) return mapToSchema(ctx.DF, raw, qid, aspect);
   const codes = await polite(async () => (await ctx.engine.queryQuads(mappingQuery(qid), { sources: source(ctx), httpTimeout: 60000 })).toArray()).catch(() => []);
   return mapToSchema(ctx.DF, raw, qid, aspect).concat(mapCodes(ctx.DF, codes.length ? codes : live, qid, opts.obo));

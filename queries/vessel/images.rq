@@ -1,0 +1,5 @@
+# Files in the item's Commons category, the Wikidata image (P18) first
+SELECT ?file (SAMPLE(?n) AS ?fileLabel) (SAMPLE(?t) AS ?thumb) (MAX(?m) AS ?main) WHERE {
+  <{{iri}}> kr:commonsFile ?file . ?file kr:thumbnail ?t
+  OPTIONAL { ?file schema:name ?n } OPTIONAL { ?file kr:mainImage ?m }
+} GROUP BY ?file ORDER BY DESC(?main) ?fileLabel LIMIT 25

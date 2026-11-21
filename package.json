@@ -1,7 +1,7 @@
 {
-  "name": "koetai-reconciliator",
+  "name": "boat-reconciliator",
   "version": "0.2.0",
-  "description": "Scholia-style scholarly profiles from Wikidata, as a static site powered by Comunica",
+  "description": "Ships and boats reconciled across Wikidata, Wikimedia Commons and OpenStreetMap, as a static site powered by Comunica",
   "scripts": {
     "build": "esbuild src/comunica-entry.js --bundle --format=esm --platform=browser --minify --define:global=globalThis --outfile=vendor/comunica.js",
     "snapshot": "node scripts/snapshot.mjs",

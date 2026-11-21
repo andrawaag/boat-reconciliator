@@ -12,7 +12,7 @@ export const NS = {
   kr: "urn:koetai-reconciliator:vocab:",
 };
 
-export const SOURCES = ["wikidata", "orcid", "crossref", "datacite", "openalex", "obo", "ols", "rdfportal", "pubmed"];
+export const SOURCES = ["wikidata", "commons", "osm", "orcid", "crossref", "datacite", "openalex", "obo", "ols", "rdfportal", "pubmed"];
 export const graphFor = (source) => `urn:koetai-reconciliator:source:${source}`;
 
 export const iri = {
@@ -24,12 +24,18 @@ export const iri = {
   // Orphanet terms keep their own IRIs (ORDO); every other ontology term is an OBO PURL.
   obo: (id) => (/^Orphanet_\d+$/.test(id) ? `http://www.orpha.net/ORDO/${id}` : `http://purl.obolibrary.org/obo/${id}`),
   pmid: (id) => `http://rdf.ncbi.nlm.nih.gov/pubmed/${id}`,
+  // Ships: IMO numbers stay with a hull for life; an MMSI belongs to a ship's radio station.
+  imo: (n) => `urn:imo:${String(n).replace(/\D/g, "")}`,
+  mmsi: (n) => `urn:mmsi:${String(n).replace(/\D/g, "")}`,
 };
 // OBO prefixes keep their case convention: upper case, except a few mixed-case ones.
 const OBO_CASE = { ncbitaxon: "NCBITaxon" };
 const oboPrefix = (p) => OBO_CASE[p.toLowerCase()] ?? p.toUpperCase();
 
 const PATTERNS = [
+  // Ships: "IMO 9811000", "imo:9811000", "MMSI 353136000", or the urn: forms.
+  ["imo", /^(?:urn:)?imo[:\s]*(\d{7})$/i, (m) => m[1]],
+  ["mmsi", /^(?:urn:)?mmsi[:\s]*(\d{9})$/i, (m) => m[1]],
   ["wikidata", /^(?:wikidata:|wd:)?(Q\d+)$/i, (m) => m[1].toUpperCase()],
   ["orcid", /^(?:orcid:|https?:\/\/orcid\.org\/)?(\d{4}-\d{4}-\d{4}-\d{3}[\dX])$/i, (m) => m[1].toUpperCase()],
   ["doi", /^(?:doi:|https?:\/\/(?:dx\.)?doi\.org\/)?(10\.\d{4,9}\/\S+)$/i, (m) => m[1].toLowerCase()],
@@ -61,13 +67,13 @@ export function termIdOf(i) {
 }
 export const keyString = ({ scheme, value }) => `${scheme}:${value}`;
 export const keyToIri = ({ scheme, value }) => iri[scheme](value);
-export const iriToKey = (i) => (/^(https?:|urn:issn:)/.test(i) ? parseKey(i) : null);
+export const iriToKey = (i) => (/^(https?:|urn:issn:|urn:imo:|urn:mmsi:)/.test(i) ? parseKey(i) : null);
 
 /** Which aspect an identifier implies on its own (a Wikidata QID needs a type lookup). */
 const OPENALEX_ASPECT = { A: "author", W: "work", S: "venue", T: "topic", C: "topic" };
 export function aspectForKey({ scheme, value }) {
   if (scheme === "openalex") return OPENALEX_ASPECT[value[0]];
-  return { orcid: "author", doi: "work", pmid: "work", issn: "venue", obo: "term" }[scheme];
+  return { orcid: "author", doi: "work", pmid: "work", issn: "venue", obo: "term", imo: "vessel", mmsi: "vessel" }[scheme];
 }
 
 /** Normalise a partial date to an RDF literal: xsd:date, xsd:gYearMonth or xsd:gYear. */

@@ -9,6 +9,7 @@ import { harvestObo } from "./adapters/obo.js";
 import { checkConceptsOls } from "./adapters/ols.js";
 import { harvestTogoid, checkNando, togoidIri } from "./adapters/rdfportal.js";
 import { harvestGenesLive } from "./adapters/genes.js";
+import { BOAT_ASPECTS, harvestBoat, harvestCommons, harvestOsm, vesselChecks } from "./adapters/boats.js";
 import { harvestPubmedWork, harvestPubmedForDois, doiForPmid } from "./adapters/pubmed.js";
 import { findByStatementsLive } from "./wikidata-live.js";
 import { wikidataFormsForObo } from "./vocab.js";
@@ -46,7 +47,7 @@ export async function harvest(ctx, key, aspectHint, onProgress = () => {}) {
   if (key.scheme === "openalex" && on("openalex")) fill(await resolveOpenalex(ctx, key.value).catch(() => null));
   if (key.scheme === "pmid" && on("pubmed")) fill({ doi: await doiForPmid(ctx, key.value).catch(() => null) });
   if (!ids.wikidata && on("wikidata")) {
-    for (const scheme of ["orcid", "doi", "pmid", "issn", "openalex"]) {
+    for (const scheme of ["imo", "mmsi", "orcid", "doi", "pmid", "issn", "openalex"]) {
       if (!ids[scheme]) continue;
       ids.wikidata = await lookupQid(ctx, scheme, ids[scheme]).catch(() => null);
       if (ids.wikidata) break;
@@ -60,6 +61,8 @@ export async function harvest(ctx, key, aspectHint, onProgress = () => {}) {
       if (ids.pmid) pairs.push({ property: "P698", value: ids.pmid });
       if (ids.issn) pairs.push({ property: "P236", value: ids.issn });
       if (ids.openalex) pairs.push({ property: "P10283", value: ids.openalex });
+      if (ids.imo) pairs.push({ property: "P458", value: ids.imo });
+      if (ids.mmsi) pairs.push({ property: "P587", value: ids.mmsi });
       const forms = ids.obo && wikidataFormsForObo(ids.obo);
       if (forms) for (const value of forms.values) pairs.push({ property: forms.property, value });
       const hit = pairs.length ? (await findByStatementsLive(ctx.fetch, pairs).catch(() => []))[0] : null;
@@ -94,6 +97,16 @@ export async function harvest(ctx, key, aspectHint, onProgress = () => {}) {
   // 2. Wikidata, the hub for topics and for further identifiers.
   if (ids.wikidata && on("wikidata")) await step("wikidata", `${aspect} neighbourhood`, () => harvestWikidata(ctx, ids.wikidata, aspect, { obo: ids.obo }));
   if (aspect === "term" && ids.wikidata && on("wikidata")) await step("wikidata", "gene associations (live)", () => harvestGenesLive(ctx, ids.wikidata));
+  // 2c. Boats: the item's statements read live (dates, renamings, flags), the ships of its class, builder or fleet,
+  // its Commons category and OpenStreetMap features, then checks across the three.
+  if (BOAT_ASPECTS.has(aspect) && ids.wikidata && on("wikidata")) {
+    const boat = await step("wikidata", { vessel: "statements (live) and sister ships", class: "ships of this class", shipyard: "ships built here", operator: "ships operated or owned" }[aspect], () => harvestBoat(ctx, ids.wikidata, aspect));
+    const [commons, osm] = await Promise.all([
+      on("commons") ? step("commons", "category and images", () => harvestCommons(ctx, ids.wikidata, boat?.facts)) : null,
+      on("osm") && aspect === "vessel" ? step("osm", "features tagged with this item", () => harvestOsm(ctx, ids.wikidata)) : null,
+    ]);
+    if (aspect === "vessel") await step("reconcile", "checks across Wikidata, Commons and OpenStreetMap", () => vesselChecks(ctx, ids.wikidata, boat?.facts, commons?.commons, osm?.osm));
+  }
   const me = iri.wikidata(ids.wikidata ?? "");
   for (const q of quads) {
     if (q.subject.value !== me || q.predicate.value !== NS.schema + "sameAs") continue;

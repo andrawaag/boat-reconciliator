@@ -1,0 +1,6 @@
+# OpenStreetMap features tagged wikidata=<this item> (wrecks, museum ships) or subject:wikidata (memorials)
+SELECT ?feature (SAMPLE(?n) AS ?featureLabel) (SAMPLE(?k) AS ?kind) (SAMPLE(?l) AS ?tag) (SAMPLE(?la) AS ?lat) (SAMPLE(?lo) AS ?lon) WHERE {
+  <{{iri}}> kr:osmFeature ?feature
+  OPTIONAL { ?feature schema:name ?n } OPTIONAL { ?feature kr:osmKind ?k } OPTIONAL { ?feature kr:osmLink ?l }
+  OPTIONAL { ?feature kr:lat ?la ; kr:lon ?lo }
+} GROUP BY ?feature ORDER BY ?tag

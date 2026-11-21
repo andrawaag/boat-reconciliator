@@ -1,10 +1,46 @@
-# koetai-reconciliator
+# boat-reconciliator
 
-**koetai reconciliator** reconciles entities across linked-data sources into one RDF graph per entity, and publishes the result as a static site with no server. It's a GitHub template, so anyone can run their own instance.
+**boat reconciliator** reconciles open data about ships and boats into one RDF graph per vessel, class, shipbuilder or fleet, and publishes it as a static site with no server. It is a fork of [koetai-reconciliator](https://github.com/andrawaag/koetai-reconciliator), specialised on watercraft.
 
-It covers scholarly entities and ontology terms. Each page (a researcher, a work, a topic or a venue) is one RDF graph, merged in your visitors' browsers from **Wikidata, ORCID, Crossref, DataCite, OpenAlex, OBO ontologies (via OLS), PubMed and TogoID/NANDO (both via [RDF Portal](https://rdfportal.org))**, with every terminology code checked in OLS, and queried with [Comunica](https://comunica.dev). GitHub Pages hosts the site, and a GitHub Action keeps pre-built snapshots of the pages you feature. You add your own visualizations as a SPARQL query plus a few lines of config.
+Site: https://andrawaag.github.io/boat-reconciliator/
 
-Inspired by [Scholia](https://github.com/WDscholia/scholia). The aim is to go native on RDF and go beyond Wikidata: the same adapter → reconcile → query pipeline is meant to extend to other domains and terminologies, OBO Foundry ontologies are the first: an ontology term's page reconciles its cross-references to SNOMED CT, MeSH, ICD-9/10/11, UMLS and others against Wikidata. (Developed under the working names frugalScholia and koetai-bibliography.)
+## What it does
+
+- **Vessel pages.** Search a ship by name, or paste an IMO number (`IMO 9811000`), an MMSI (`MMSI 353136000`) or a Wikidata QID. Any item that is an instance of a subclass of watercraft (Q1229765) gets a vessel page. Its statements are read live from Wikidata's API, so qualifiers and ranks are exact and edits show at once:
+  - **Details:** type, class, builder, place of build, yard number, launch date, service dates, state, flag, port of registry, operator, owner, IMO, MMSI, call sign, ENI, pennant number, dimensions, tonnage, speed, namesake, heritage status and position (linked to OpenStreetMap).
+  - **Timeline:** keel laying, launch, completion, collisions, groundings, sinking (significant event, P793, with its date), entry into and retirement from service, and every dated change of name, owner, operator, flag and port.
+  - **Names:** the ship's names over time (P2561, P1448).
+  - **Sister ships:** the other ships of its class.
+  - **Images:** the Wikidata image and a gallery from the ship's Commons category, one level of subcategories deep when the category itself is nearly empty (as Commons' `IMO 1234567` categories often are).
+  - **On OpenStreetMap:** features tagged `wikidata=` the ship (wrecks, museum ships) or `subject:wikidata=` it (memorials, plaques), with their positions. These come from [QLever's copy of OpenStreetMap](https://qlever.dev/osm-planet), which answers in a fraction of a second; Overpass is the fallback.
+  - **Other identifiers:** every external ID on the item (DNV, WreckSite, Lloyd's Register, Three Decks, Canmore, national registers, …), linked through each property's formatter URL. Works about the ship and Wikipedia coverage (with missing languages and a translate link) complete the page.
+- **Checks across sources.** The page compares Wikidata, Commons and OpenStreetMap:
+  - **IMO check digit:** the seventh digit of an IMO number is a checksum, so typos are caught.
+  - **MMSI and flag:** an MMSI starts with its country's maritime identification digits (P2979 on the flag state), so an MMSI and a flag that disagree mean one of them is out of date.
+  - **Shared IMO or MMSI:** other items with the same number are flagged as possible duplicates (merge them) or earlier and later stages of the same hull (link them).
+  - **Commons category and image:** checked that they exist on Commons.
+  - **OpenStreetMap:** features linked to the item, whether the item has their OSM IDs, and whether the two positions agree.
+- **Improve Wikidata.** Fixes that follow from the checks become QuickStatements you run under your own Wikimedia account:
+  - the Commons category (P373) from the item's Commons sitelink;
+  - the OSM node, way or relation ID (P11693, P10689, P402) of a feature tagged with the item;
+  - an image (P18) picked from the Commons photos.
+  
+  The item is read live first, so done edits drop out. Coordinates are never copied from OpenStreetMap: its licence (ODbL) is not compatible with Wikidata's CC0.
+- **Class, shipbuilder and fleet pages.** A ship class (Q559026, or anything ships name in P289) lists its ships, ships per year, builders and flags. A shipbuilder (named in ships' manufacturer, P176) lists the ships it built, per year, with their types and classes. A shipping line, navy or other owner (operator P137 or owner P127 of watercraft) lists its fleet, past and present, by year built, type and builder.
+
+The scholarly pages of the template (people, works, venues) still work, for maritime historians and the literature about ships.
+
+Examples: [Titanic](https://andrawaag.github.io/boat-reconciliator/#/vessel/wikidata:Q25173), [Cutty Sark](https://andrawaag.github.io/boat-reconciliator/#/vessel/wikidata:Q171255), [Ever Given (IMO 9811000)](https://andrawaag.github.io/boat-reconciliator/#/vessel/imo:9811000), [the Olympic class](https://andrawaag.github.io/boat-reconciliator/#/class/wikidata:Q767166), [Harland and Wolff](https://andrawaag.github.io/boat-reconciliator/#/shipyard/wikidata:Q848977) and [Holland America Line](https://andrawaag.github.io/boat-reconciliator/#/operator/wikidata:Q1624735). Gil Eannes, a hospital ship turned museum (Q10335851), shows a typical fix: OpenStreetMap maps the museum ship as way 188629658 tagged with the item, and the page proposes adding that OSM way ID to Wikidata.
+
+## Known limits of the boat additions
+
+- **Sources:** Wikidata is the hub. Open ship registers (IMO's GISIS, national registers, Equasis) need logins or have no open API, and AIS positions (MarineTraffic, VesselFinder) are commercial. Their IDs appear only as links.
+- **Page types:** an item is a vessel if Wikidata types it as a kind of watercraft, a class if it is a ship class or ships name it as their class, and a builder or fleet if watercraft name it as manufacturer, operator or owner. When an item is both (a company that built and ran ships), the larger role wins; add `#/shipyard/…` or `#/operator/…` to the URL to choose.
+- **Dates:** fleet tables use the year of launch, else of entry into service, else inception. Ships without any of these are listed last.
+- **OpenStreetMap:** QLever's copy is updated about weekly, so a tag added today may not show yet.
+- **Large fleets:** builders and navies with thousands of ships take 10–30 seconds to load live; featured pages are pre-built snapshots.
+
+The documentation below is the template's, and applies here too.
 
 ---
 
@@ -24,7 +60,7 @@ Snapshots refresh every Monday. Run the workflow by hand (**Actions → site →
 |---|---|
 | `title`, `tagline`, `intro` | Site name, home page heading and intro text |
 | `accent` | Accent colour (any CSS colour); the dark theme derives from it |
-| `sources` | Which of `wikidata`, `orcid`, `crossref`, `datacite`, `openalex`, `obo` to use |
+| `sources` | Which of `wikidata`, `commons`, `osm`, `orcid`, `crossref`, `datacite`, `openalex`, `obo`, `ols`, `rdfportal`, `pubmed` to use |
 | `wikidataEndpoint` | Wikidata SPARQL endpoint (default QLever, which holds the full graph) |
 | `liveHarvest` | `false` limits the site to its snapshots: no live API calls from visitors' browsers |
 | `wikidataCreate` | `false` hides the "Not on Wikidata yet" panel on author pages (default `true`) |
@@ -290,7 +326,7 @@ Write `src/adapters/<name>.js` returning quads in graph `urn:koetai-reconciliato
 
 This project was developed with substantial help from generative AI, as recommended by emerging norms for disclosing AI use in research software.
 
-- **Tool:** Claude Code, running the Claude Opus 5.5 model (Anthropic), in November 2026.
+- **Tool:** Claude Code, running the Claude Opus 5.5 model (Anthropic), in November 2026. The boat fork (adapters for Wikidata vessel statements, Commons and OpenStreetMap, the checks and the class, builder and fleet pages) was written the same way.
 - **What the AI did:**
   - proposed the architecture: source adapters → schema.org named graphs → reconciliation → Comunica over static or live graphs, packaged as a configurable template;
   - wrote the code, SPARQL queries, GitHub workflow and this README;
@@ -304,4 +340,4 @@ If you build an instance from this template, keep this section and add your own 
 
 ## License
 
-MIT, see [LICENSE](LICENSE). Data shown by an instance keeps its source licences: Wikidata, ORCID public data and OpenAlex are CC0; Crossref and DataCite metadata are generally CC0 or open. OBO ontologies are mostly CC BY 4.0 or CC0 (check each ontology). SNOMED CT, ICD and UMLS codes appear only as identifiers taken from OBO cross-references and Wikidata; their content is licensed separately.
+MIT, see [LICENSE](LICENSE). Data shown by an instance keeps its source licences: Wikidata, ORCID public data and OpenAlex are CC0; Wikimedia Commons files carry their own licences (shown on each file's page); OpenStreetMap data is ODbL (© OpenStreetMap contributors); Crossref and DataCite metadata are generally CC0 or open. OBO ontologies are mostly CC BY 4.0 or CC0 (check each ontology). SNOMED CT, ICD and UMLS codes appear only as identifiers taken from OBO cross-references and Wikidata; their content is licensed separately.

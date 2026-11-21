@@ -1,0 +1,5 @@
+# Ships listed here, counted by class
+SELECT ?class (SAMPLE(?n) AS ?classLabel) (COUNT(DISTINCT ?ship) AS ?ships) WHERE {
+  ?ship kr:listedUnder <{{iri}}> ; kr:vesselClass ?class
+  OPTIONAL { ?class schema:name ?n }
+} GROUP BY ?class ORDER BY DESC(?ships) LIMIT 100

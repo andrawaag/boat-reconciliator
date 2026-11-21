@@ -36,7 +36,7 @@ export function normalizeConfig(raw = {}) {
 export function panelsFor(config, aspect) {
   const conf = config.panels?.[aspect] ?? {};
   const hide = new Set(conf.hide ?? []);
-  const list = ASPECTS[aspect].panels.filter((p) => !hide.has(p.id)).map((p) => ({ ...p, file: `queries/${aspect}/${p.id}.rq` }));
+  const list = ASPECTS[aspect].panels.filter((p) => !hide.has(p.id)).map((p) => ({ ...p, file: p.query ?? `queries/${aspect}/${p.id}.rq` }));
   for (const p of conf.add ?? []) {
     const panel = { render: "table", ...p, file: p.query ?? `queries/custom/${aspect}/${p.id}.rq`, custom: true };
     const at = p.after ? list.findIndex((x) => x.id === p.after) : -1;

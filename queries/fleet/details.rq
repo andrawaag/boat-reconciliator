@@ -1,0 +1,7 @@
+# How many ships are listed here, over which years, from how many builders
+SELECT (COUNT(DISTINCT ?ship) AS ?ships) (MIN(xsd:integer(?y)) AS ?first) (MAX(xsd:integer(?y)) AS ?last)
+       (COUNT(DISTINCT ?b) AS ?builders) (COUNT(DISTINCT ?imo) AS ?withImo) (SAMPLE(?cat) AS ?commons) WHERE {
+  ?ship kr:listedUnder <{{iri}}>
+  OPTIONAL { ?ship kr:year ?y } OPTIONAL { ?ship kr:builder ?b } OPTIONAL { ?ship kr:imo ?imo }
+  OPTIONAL { <{{iri}}> kr:commonsCategoryPage ?cat }
+}

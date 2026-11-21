@@ -1,0 +1,9 @@
+# The ships, oldest first
+SELECT ?ship (SAMPLE(?sn) AS ?shipLabel) (SAMPLE(?y) AS ?year) (SAMPLE(?t) AS ?type) (SAMPLE(?tn) AS ?typeLabel) (SAMPLE(?i) AS ?imo)
+       (SAMPLE(?b) AS ?builder) (SAMPLE(?bn) AS ?builderLabel) (SAMPLE(?f) AS ?flag) (SAMPLE(?fn) AS ?flagLabel) (SAMPLE(?r) AS ?retired) WHERE {
+  ?ship kr:listedUnder <{{iri}}>
+  OPTIONAL { ?ship schema:name ?sn } OPTIONAL { ?ship kr:year ?y } OPTIONAL { ?ship kr:imo ?i } OPTIONAL { ?ship kr:retiredYear ?r }
+  OPTIONAL { ?ship kr:type ?t OPTIONAL { ?t schema:name ?tn } }
+  OPTIONAL { ?ship kr:builder ?b OPTIONAL { ?b schema:name ?bn } }
+  OPTIONAL { ?ship kr:flag ?f OPTIONAL { ?f schema:name ?fn } }
+} GROUP BY ?ship ORDER BY (COALESCE(?year, "9999")) ?shipLabel LIMIT 5000

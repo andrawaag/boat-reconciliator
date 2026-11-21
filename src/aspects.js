@@ -1,6 +1,59 @@
 // Aspect definitions: which panels a page shows. Each panel is queries/<aspect>/<id>.rq (or queries/common/<id>.rq),
 // a SPARQL query over the merged schema.org graph with {{iri}} as the entity placeholder.
 export const ASPECTS = {
+  vessel: {
+    title: "Vessel",
+    panels: [
+      { id: "details", title: "Details", render: "kv" },
+      { id: "images", title: "Images (Wikimedia Commons)", render: "gallery", wide: true, hideEmpty: true },
+      { id: "checks", title: "Checks across Wikidata, Commons and OpenStreetMap", render: "table", wide: true },
+      { id: "timeline", title: "Timeline", render: "table", wide: true, hideEmpty: true },
+      { id: "names", title: "Names", render: "table", hideEmpty: true },
+      { id: "sister-ships", title: "Sister ships (same class)", render: "table", hideEmpty: true },
+      { id: "osm", title: "On OpenStreetMap", render: "table", wide: true, hideEmpty: true },
+      { id: "works", title: "Works about this vessel", render: "table", hideEmpty: true, query: "queries/topic/works.rq" },
+      { id: "external-ids", title: "Other identifiers (Wikidata)", render: "table", wide: true, hideEmpty: true, query: "queries/author/external-ids.rq" },
+    ],
+  },
+  class: {
+    title: "Ship class",
+    panels: [
+      { id: "details", title: "Summary", render: "kv", query: "queries/fleet/details.rq" },
+      { id: "per-year", title: "Ships per year (launched or in service)", render: "bars", query: "queries/fleet/per-year.rq" },
+      { id: "ships", title: "Ships of this class", render: "table", wide: true, query: "queries/fleet/ships.rq" },
+      { id: "builders", title: "Builders", render: "table", query: "queries/fleet/builders.rq" },
+      { id: "flags", title: "Flags", render: "table", query: "queries/fleet/flags.rq" },
+      { id: "images", title: "Images (Wikimedia Commons)", render: "gallery", wide: true, hideEmpty: true, query: "queries/vessel/images.rq" },
+      { id: "works", title: "Works about this class", render: "table", hideEmpty: true, query: "queries/topic/works.rq" },
+      { id: "external-ids", title: "Other identifiers (Wikidata)", render: "table", wide: true, hideEmpty: true, query: "queries/author/external-ids.rq" },
+    ],
+  },
+  shipyard: {
+    title: "Shipbuilder",
+    panels: [
+      { id: "details", title: "Summary", render: "kv", query: "queries/fleet/details.rq" },
+      { id: "per-year", title: "Ships built per year", render: "bars", query: "queries/fleet/per-year.rq" },
+      { id: "ships", title: "Ships built", render: "table", wide: true, query: "queries/fleet/ships.rq" },
+      { id: "types", title: "Types of vessel", render: "table", query: "queries/fleet/types.rq" },
+      { id: "classes", title: "Classes", render: "table", query: "queries/fleet/classes.rq" },
+      { id: "images", title: "Images (Wikimedia Commons)", render: "gallery", wide: true, hideEmpty: true, query: "queries/vessel/images.rq" },
+      { id: "works", title: "Works about this builder", render: "table", hideEmpty: true, query: "queries/topic/works.rq" },
+      { id: "external-ids", title: "Other identifiers (Wikidata)", render: "table", wide: true, hideEmpty: true, query: "queries/author/external-ids.rq" },
+    ],
+  },
+  operator: {
+    title: "Ship operator or owner",
+    panels: [
+      { id: "details", title: "Summary", render: "kv", query: "queries/fleet/details.rq" },
+      { id: "per-year", title: "Fleet by year built", render: "bars", query: "queries/fleet/per-year.rq" },
+      { id: "ships", title: "Fleet (operated or owned, past and present)", render: "table", wide: true, query: "queries/fleet/ships.rq" },
+      { id: "types", title: "Types of vessel", render: "table", query: "queries/fleet/types.rq" },
+      { id: "builders", title: "Builders", render: "table", query: "queries/fleet/builders.rq" },
+      { id: "images", title: "Images (Wikimedia Commons)", render: "gallery", wide: true, hideEmpty: true, query: "queries/vessel/images.rq" },
+      { id: "works", title: "Works about this operator", render: "table", hideEmpty: true, query: "queries/topic/works.rq" },
+      { id: "external-ids", title: "Other identifiers (Wikidata)", render: "table", wide: true, hideEmpty: true, query: "queries/author/external-ids.rq" },
+    ],
+  },
   author: {
     title: "Author",
     panels: [

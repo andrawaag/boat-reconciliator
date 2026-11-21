@@ -1,0 +1,4 @@
+# Ships by the year they were launched (else entered service, else built)
+SELECT ?year (COUNT(DISTINCT ?ship) AS ?ships) WHERE {
+  ?ship kr:listedUnder <{{iri}}> ; kr:year ?year
+} GROUP BY ?year ORDER BY ?year

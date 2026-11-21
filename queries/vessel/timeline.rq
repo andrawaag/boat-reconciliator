@@ -1,0 +1,6 @@
+# Launch, service, renamings and changes of owner, operator and flag, from dated Wikidata statements
+SELECT ?date ?event ?with (SAMPLE(?wn) AS ?withLabel) ?until ?property WHERE {
+  <{{iri}}> kr:event ?e . ?e kr:date ?date ; schema:name ?event ; kr:property ?property
+  OPTIONAL { ?e kr:with ?with OPTIONAL { ?with schema:name ?wn } }
+  OPTIONAL { ?e kr:until ?until }
+} GROUP BY ?date ?event ?with ?until ?property ORDER BY (?date = "") ?date

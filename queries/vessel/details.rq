@@ -1,0 +1,30 @@
+# A vessel's main facts from Wikidata (the current value where a statement changed over time; see the timeline)
+SELECT (SAMPLE(?t) AS ?type) (SAMPLE(?tn) AS ?typeLabel) (SAMPLE(?c) AS ?class) (SAMPLE(?cn) AS ?classLabel)
+       (SAMPLE(?b) AS ?builder) (SAMPLE(?bn) AS ?builderLabel) (SAMPLE(?ba) AS ?builtAt) (SAMPLE(?ban) AS ?builtAtLabel) (SAMPLE(?yn) AS ?yardNumber)
+       (SAMPLE(?la) AS ?launched) (SAMPLE(?se) AS ?inService) (SAMPLE(?sr) AS ?retired) (SAMPLE(?su) AS ?state) (SAMPLE(?sun) AS ?stateLabel)
+       (SAMPLE(?f) AS ?flag) (SAMPLE(?fn) AS ?flagLabel) (SAMPLE(?pr) AS ?portOfRegistry) (SAMPLE(?prn) AS ?portOfRegistryLabel)
+       (SAMPLE(?o) AS ?operator) (SAMPLE(?on) AS ?operatorLabel) (SAMPLE(?ow) AS ?owner) (SAMPLE(?own) AS ?ownerLabel)
+       (SAMPLE(?imo_) AS ?imo) (SAMPLE(?mmsi_) AS ?mmsi) (SAMPLE(?cs) AS ?callSign) (SAMPLE(?eni_) AS ?eni) (SAMPLE(?pn) AS ?pennant)
+       (SAMPLE(?len) AS ?length) (SAMPLE(?bm) AS ?beam) (SAMPLE(?dr) AS ?draft) (SAMPLE(?gt) AS ?grossTonnage) (SAMPLE(?dis) AS ?displacement) (SAMPLE(?sp) AS ?speed)
+       (SAMPLE(?na) AS ?namedAfter) (SAMPLE(?nan) AS ?namedAfterLabel) (SAMPLE(?he) AS ?heritage) (SAMPLE(?hen) AS ?heritageLabel) (SAMPLE(?co) AS ?coordinates) WHERE {
+  OPTIONAL { <{{iri}}> kr:type ?t OPTIONAL { ?t schema:name ?tn } }
+  OPTIONAL { <{{iri}}> kr:vesselClass ?c OPTIONAL { ?c schema:name ?cn } }
+  OPTIONAL { <{{iri}}> kr:builder ?b OPTIONAL { ?b schema:name ?bn } }
+  OPTIONAL { <{{iri}}> kr:builtAt ?ba OPTIONAL { ?ba schema:name ?ban } }
+  OPTIONAL { <{{iri}}> kr:yardNumber ?yn }
+  OPTIONAL { <{{iri}}> kr:launched ?la }
+  OPTIONAL { <{{iri}}> kr:serviceEntry ?se }
+  OPTIONAL { <{{iri}}> kr:serviceRetirement ?sr }
+  OPTIONAL { <{{iri}}> kr:stateOfUse ?su OPTIONAL { ?su schema:name ?sun } }
+  OPTIONAL { <{{iri}}> kr:flag ?f OPTIONAL { ?f schema:name ?fn } }
+  OPTIONAL { <{{iri}}> kr:portOfRegistry ?pr OPTIONAL { ?pr schema:name ?prn } }
+  OPTIONAL { <{{iri}}> kr:operator ?o OPTIONAL { ?o schema:name ?on } }
+  OPTIONAL { <{{iri}}> kr:owner ?ow OPTIONAL { ?ow schema:name ?own } }
+  OPTIONAL { <{{iri}}> kr:imo ?imo_ } OPTIONAL { <{{iri}}> kr:mmsi ?mmsi_ } OPTIONAL { <{{iri}}> kr:callSign ?cs }
+  OPTIONAL { <{{iri}}> kr:eni ?eni_ } OPTIONAL { <{{iri}}> kr:pennant ?pn }
+  OPTIONAL { <{{iri}}> kr:length ?len } OPTIONAL { <{{iri}}> kr:beam ?bm } OPTIONAL { <{{iri}}> kr:draft ?dr }
+  OPTIONAL { <{{iri}}> kr:grossTonnage ?gt } OPTIONAL { <{{iri}}> kr:displacement ?dis } OPTIONAL { <{{iri}}> kr:speed ?sp }
+  OPTIONAL { <{{iri}}> kr:namedAfter ?na OPTIONAL { ?na schema:name ?nan } }
+  OPTIONAL { <{{iri}}> kr:heritage ?he OPTIONAL { ?he schema:name ?hen } }
+  OPTIONAL { <{{iri}}> kr:coordinates ?co }
+}

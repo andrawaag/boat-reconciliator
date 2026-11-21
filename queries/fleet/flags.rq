@@ -1,0 +1,5 @@
+# Ships listed here, counted by flag
+SELECT ?flag (SAMPLE(?n) AS ?flagLabel) (COUNT(DISTINCT ?ship) AS ?ships) WHERE {
+  ?ship kr:listedUnder <{{iri}}> ; kr:flag ?flag
+  OPTIONAL { ?flag schema:name ?n }
+} GROUP BY ?flag ORDER BY DESC(?ships) LIMIT 100

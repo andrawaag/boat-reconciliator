@@ -10,6 +10,7 @@ import { gatherFixes, buildFixCommands, fixKey, deprecationEdit, statementValue 
 import { gatherMissingWorks, checkOnWikidata, buildWorkCommands, workStatus, P31_LABEL } from "./wikidata-works.js";
 import { sitelinksLive, articleUrl, translateUrl, sourceLanguage, languageName, itemsForOrphaCodes, createDiseaseItems, duplicateCandidates, addOrphanetIds, DEFAULT_LANGUAGES } from "./wikipedia.js";
 import { personFacts, profileCandidates, profileCommands } from "./profile-match.js";
+import { BOAT_ASPECTS } from "./adapters/boats.js";
 import { gatherCandidate, findExisting, searchByName, buildCommands, quickStatementsUrl, propertyLabel, propertyUrl } from "./wikidata-create.js";
 
 const engine = new QueryEngine();
@@ -86,7 +87,7 @@ const h = (tag, attrs = {}, ...kids) => {
   return el;
 };
 
-const COLUMN_ASPECT = { work: "work", cited: "work", citing: "work", author: "author", coauthor: "author", venue: "venue", topic: "topic", parent: "term", child: "term", replacedBy: "term", code: "term", gene: "topic" };
+const COLUMN_ASPECT = { ship: "vessel", class: "class", builder: "shipyard", operator: "operator", owner: "operator", work: "work", cited: "work", citing: "work", author: "author", coauthor: "author", venue: "venue", topic: "topic", parent: "term", child: "term", replacedBy: "term", code: "term", gene: "topic" };
 const HIDDEN = new Set(["position"]);
 
 function externalUrl(key) {
@@ -98,6 +99,8 @@ function externalUrl(key) {
     openalex: `https://openalex.org/${key.value}`,
     obo: /^Orphanet_/.test(key.value) ? `https://www.orpha.net/en/disease/detail/${key.value.slice(9)}` : `http://purl.obolibrary.org/obo/${key.value}`,
     pmid: `https://pubmed.ncbi.nlm.nih.gov/${key.value}/`,
+    imo: `https://www.marinetraffic.com/en/ais/details/ships/imo:${key.value}`,
+    mmsi: `https://www.marinetraffic.com/en/ais/details/ships/mmsi:${key.value}`,
   }[key.scheme];
 }
 
@@ -135,7 +138,10 @@ function renderKv(rows, vars) {
   if (!b) return h("p", { class: "empty" }, "No details.");
   return h("dl", { class: "kv" }, vars.filter((v) => !v.endsWith("Label") && b.get(v) && b.get(v).value !== "").map((v) => {
     const t = b.get(v);
-    const value = t.termType === "NamedNode" ? entityLink(t.value, b.get(`${v}Label`)?.value, v)
+    const ll = t.value.match(/^(-?\d+\.\d+), (-?\d+\.\d+)$/);
+    const value = t.termType === "NamedNode" && !iriToKey(t.value) && /^https?:/.test(t.value) ? h("a", { href: t.value, target: "_blank", rel: "noopener" }, decodeURIComponent(t.value.split("/").pop()).replace(/_/g, " "))
+      : t.termType === "NamedNode" ? entityLink(t.value, b.get(`${v}Label`)?.value, v)
+      : ll ? h("a", { href: `https://www.openstreetmap.org/?mlat=${ll[1]}&mlon=${ll[2]}#map=8/${ll[1]}/${ll[2]}`, target: "_blank", rel: "noopener", title: "Show on OpenStreetMap" }, t.value)
       : /^https?:\/\/\S+$/.test(t.value) ? h("a", { href: t.value, target: "_blank", rel: "noopener" }, t.value) : t.value;
     return [h("dt", {}, v), h("dd", {}, value)];
   }));
@@ -216,7 +222,19 @@ async function renderVegaLite(rows, vars, panel, body) {
   await (await loadVega())(el, spec, { actions: { export: true, source: false, compiled: false, editor: false }, renderer: "svg" });
 }
 
-const RENDER = { table: renderTable, kv: renderKv, bars: renderBars, ids: renderIds, "vega-lite": renderVegaLite };
+// Gallery: ?file (page), ?thumb (image URL), ?fileLabel (caption), ?main (the Wikidata image, marked).
+function renderGallery(rows) {
+  if (!rows.length) return h("p", { class: "empty" }, "No images.");
+  return h("div", { class: "gallery" }, rows.map((b) => {
+    const file = b.get("file")?.value, thumb = b.get("thumb")?.value, label = b.get("fileLabel")?.value ?? "";
+    if (!file || !/^https:\/\/[a-z]+\.wikimedia\.org\//.test(thumb ?? "")) return null;
+    return h("figure", { class: b.get("main") ? "main" : null },
+      h("a", { href: file, target: "_blank", rel: "noopener", title: label }, h("img", { src: thumb, alt: label, loading: "lazy" })),
+      h("figcaption", {}, b.get("main") ? h("b", {}, "Wikidata image · ") : "", label));
+  }));
+}
+
+const RENDER = { table: renderTable, kv: renderKv, bars: renderBars, ids: renderIds, gallery: renderGallery, "vega-lite": renderVegaLite };
 
 async function runPanel(graph, panel, el) {
   const file = panel.file;
@@ -551,6 +569,50 @@ async function termFixPanel(graph) {
     h("header", {}, h("h2", {}, "Improve Wikidata"), h("span", { class: "timing" }, proposals.length ? `${proposals.length} possible edits` : "In agreement")), body);
 }
 
+// ---------- Improve Wikidata (vessels) ----------
+// Edits that follow from the checks across sources (Commons category from the sitelink, OpenStreetMap IDs of features
+// tagged with the item), plus an image picked from the Commons category. Read live first, so done edits drop out.
+const BOAT_PROPS = { P373: "Commons category", P402: "OpenStreetMap relation ID", P10689: "OpenStreetMap way ID", P11693: "OpenStreetMap node ID", P18: "image" };
+async function boatFixPanel(graph) {
+  const qid = pageQid(graph);
+  if (!qid) return null;
+  const run = async (q) => (await engine.queryBindings(`${await loadText("queries/prefixes.rq")}\n${q}`, { sources: [graph.store], unionDefaultGraph: true })).toArray();
+  const proposals = (await run(`SELECT ?property ?value ?reason WHERE { <${graph.iri}> kr:proposal ?p . ?p kr:property ?property ; kr:value ?value ; schema:description ?reason }`))
+    .map((b) => ({ property: b.get("property").value, value: b.get("value").value, reason: b.get("reason").value, on: true }));
+  const files = (await run(`SELECT DISTINCT ?file ?thumb ?name WHERE { <${graph.iri}> kr:commonsFile ?file . ?file kr:thumbnail ?thumb ; schema:name ?name }`))
+    .map((b) => ({ file: decodeURIComponent(b.get("file").value.split("/wiki/File:")[1] ?? "").replace(/_/g, " "), thumb: b.get("thumb").value, name: b.get("name").value })).filter((f) => f.file);
+  const held = await claimValuesLive(fetch, qid, ["P18", "P373", "P402", "P10689", "P11693"]).catch(() => new Map());
+  const open = proposals.filter((p) => !held.get(p.property)?.size || (p.property !== "P373" && !held.get(p.property).has(p.value.toUpperCase())));
+  const pickImage = !held.get("P18")?.size && files.length > 0;
+  if (!open.length && !pickImage) return null;
+
+  let image = null;
+  const textarea = h("textarea", { class: "qs", rows: 4, spellcheck: "false", "aria-label": "QuickStatements commands" });
+  const q = (v) => `"${String(v).replace(/"/g, "")}"`;
+  const regenerate = () => {
+    textarea.value = [...open.filter((p) => p.on).map((p) => `${qid}\t${p.property}\t${q(p.value)}`), image && `${qid}\tP18\t${q(image)}`].filter(Boolean).join("\n");
+  };
+  const body = h("div", { class: "panel-body" });
+  body.append(
+    h("p", {}, "These edits follow from the checks above. You run them with ", h("a", { href: "https://www.wikidata.org/wiki/Help:QuickStatements", target: "_blank", rel: "noopener" }, "QuickStatements"), " under your own Wikimedia account."),
+    open.length ? h("ul", { class: "matches" }, open.map((p) => h("li", {}, h("label", {},
+      h("input", { type: "checkbox", checked: true, onchange: (e) => { p.on = e.target.checked; regenerate(); } }), " ",
+      h("b", {}, `${BOAT_PROPS[p.property] ?? p.property} (${p.property}) = ${p.value}`), h("span", { class: "muted" }, ` · ${p.reason}`))))) : "",
+    pickImage ? h("div", {}, h("h3", {}, "Pick an image (P18)"), h("p", { class: "muted small" }, "The item has no image. Choose a photo of the vessel itself from its Commons category, or none."),
+      h("div", { class: "gallery pick" }, files.slice(0, 18).map((f) => h("label", { class: "figure-pick" },
+        h("input", { type: "radio", name: "p18", onchange: () => { image = f.file; regenerate(); } }),
+        h("img", { src: f.thumb, alt: f.name, loading: "lazy" }), h("span", { class: "small" }, f.name))),
+        h("label", { class: "figure-pick none" }, h("input", { type: "radio", name: "p18", checked: true, onchange: () => { image = null; regenerate(); } }), h("span", {}, "no image")))) : "",
+    h("h3", {}, "QuickStatements"), textarea,
+    h("div", { class: "actions" },
+      h("button", { type: "button", class: "primary", onclick: () => textarea.value && window.open(quickStatementsUrl(textarea.value), "_blank", "noopener") }, "Open in QuickStatements"),
+      h("button", { type: "button", onclick: async (e) => { try { await navigator.clipboard.writeText(textarea.value); e.target.textContent = "Copied"; } catch { textarea.select(); } } }, "Copy commands")),
+    h("p", { class: "muted small" }, "OpenStreetMap IDs link the item to the mapped wreck or museum ship. Coordinates are not copied from OpenStreetMap: its licence (ODbL) is not compatible with Wikidata's CC0. After running the edits, refresh this page to see the checks pass."));
+  regenerate();
+  return h("section", { class: "panel wide wd-create", id: "panel-improve-wikidata" },
+    h("header", {}, h("h2", {}, "Improve Wikidata"), h("span", { class: "timing" }, `${open.length + (pickImage ? 1 : 0)} possible edit${open.length + (pickImage ? 1 : 0) === 1 ? "" : "s"}`)), body);
+}
+
 // ---------- Wikipedia coverage and subtypes (rare diseases) ----------
 const WD_ENTITY = "http://www.wikidata.org/entity/";
 const RDFS_SUBCLASS = "http://www.w3.org/2000/01/rdf-schema#subClassOf";
@@ -577,7 +639,7 @@ async function wikipediaPanel(graph) {
     status.textContent = `${links.size} language${links.size === 1 ? "" : "s"}`;
     body.replaceChildren(...h("div", {},
       links.size ? h("p", { class: "chips" }, [...links].sort(([a], [b]) => a.localeCompare(b)).map(([l, t]) => h("a", { class: "chip", href: articleUrl(l, t), target: "_blank", rel: "noopener", title: t }, l)))
-        : h("p", { class: "warn" }, "No Wikipedia has an article on this disease yet."),
+        : h("p", { class: "warn" }, "No Wikipedia has an article on this yet."),
       missing.length ? [h("h3", {}, `Missing in ${missing.length} of your ${languages().length} languages`),
         h("ul", { class: "matches" }, missing.map((l) => {
           const cx = translateUrl(links, l);
@@ -680,7 +742,7 @@ let routeId = 0;
 async function entityPage(aspectHint, rawKey) {
   const myRoute = routeId;
   const key = parseKey(rawKey);
-  if (!key) return notFound(`"${rawKey}" is not an ORCID, DOI, PMID, ISSN, Wikidata QID or ontology term ID.`);
+  if (!key) return notFound(`"${rawKey}" is not an IMO number, MMSI, Wikidata QID, ORCID, DOI, PMID, ISSN or ontology term ID.`);
   const progress = h("ol", { class: "progress" });
   const steps = new Map();
   const onProgress = (p) => {
@@ -739,6 +801,10 @@ async function entityPage(aspectHint, rawKey) {
       const after = grid.querySelector("#panel-works");
       after ? after.after(el) : grid.append(el);
     }).catch((err) => console.warn("Missing-works panel:", err));
+  if (BOAT_ASPECTS.has(aspect) && config.sources.includes("wikidata")) {
+    wikipediaPanel(graph).then((el) => { if (el && myRoute === routeId) { const after = grid.querySelector("#panel-details"); after ? after.after(el) : grid.prepend(el); } }).catch((err) => console.warn("Wikipedia panel:", err));
+    if (aspect === "vessel") boatFixPanel(graph).then((el) => { if (el && myRoute === routeId) { const after = grid.querySelector("#panel-checks"); after ? after.after(el) : grid.prepend(el); } }).catch((err) => console.warn("Improve-Wikidata panel:", err));
+  }
   if ((aspect === "term" || aspect === "topic") && config.wikipediaCoverage !== false && config.sources.includes("wikidata")) {
     wikipediaPanel(graph).then((el) => { if (el && myRoute === routeId) { const after = grid.querySelector("#panel-details"); after ? after.after(el) : grid.prepend(el); } }).catch((err) => console.warn("Wikipedia panel:", err));
     subtypesPanel(graph).then((el) => { if (el && myRoute === routeId) { const after = grid.querySelector("#panel-children"); after ? after.after(el) : grid.append(el); } }).catch((err) => console.warn("Subtypes panel:", err));
@@ -759,7 +825,7 @@ async function home() {
   main.replaceChildren(h("section", { class: "home" },
     h("h1", {}, config.tagline),
     config.intro && h("p", { class: "lede" }, config.intro),
-    h("p", {}, config.liveHarvest ? "Search above, or paste an ORCID, DOI, PMID (e.g. pmid:26978244), ISSN, Wikidata QID, OpenAlex id, ontology term ID (e.g. MONDO:0005148) or Orphanet code (e.g. ORPHA:558)." : "This site shows the pre-built pages below."),
+    h("p", {}, config.liveHarvest ? "Search for a ship by name above, or paste an IMO number (e.g. IMO 9811000), an MMSI (e.g. MMSI 353136000) or a Wikidata QID. Ship classes, shipbuilders and shipping lines have pages too." : "This site shows the pre-built pages below."),
     h("h2", {}, "Featured"),
     Object.keys(byAspect).length ? h("div", { class: "snapshots" }, Object.entries(byAspect).map(([a, list]) => h("div", {},
       h("h3", {}, ASPECTS[a]?.title ?? a),

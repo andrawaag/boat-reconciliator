@@ -1,52 +1,20 @@
 {
-  "title": "koetai reconciliator",
-  "tagline": "Scholarly profiles without a server",
-  "intro": "This site gathers open scholarly metadata about a person, work, topic or venue from Wikidata, ORCID, Crossref, DataCite and OpenAlex. It merges it into one RDF graph and draws Scholia-style panels from it in your browser with Comunica. Pages listed below are pre-built snapshots; any other page is fetched live.",
-  "accent": "#2f6f5e",
-  "sources": ["wikidata", "orcid", "crossref", "datacite", "openalex", "obo", "ols", "rdfportal", "pubmed"],
+  "title": "boat reconciliator",
+  "tagline": "Ships and boats, reconciled across open data",
+  "intro": "This site gathers what open data says about a ship or boat, its class, its builder and its operators: Wikidata's statements (read live, with dated launches, renamings, owners and flags), images from Wikimedia Commons, wrecks and museum ships on OpenStreetMap, and works about it. It merges them into one RDF graph, draws the panels in your browser with Comunica, and checks the sources against each other: IMO check digits, MMSI country digits against the flag, items that share an IMO number, Commons categories and OpenStreetMap IDs. Fixes become QuickStatements that you run under your own Wikimedia account.",
+  "accent": "#1f5f8b",
+  "sources": ["wikidata", "commons", "osm", "openalex", "crossref", "datacite", "orcid", "pubmed"],
   "wikidataEndpoint": "https://qlever.dev/api/wikidata",
   "liveHarvest": true,
+  "wikidataFixes": false,
+  "wikipediaCoverage": false,
   "seeds": [
-    "wikidata:Q18618629",
-    "orcid:0000-0001-9488-1870",
-    "doi:10.1145/2629489",
-    "wikidata:Q2013",
-    "issn:2052-4463",
-    "obo:MONDO_0005148",
-    "obo:Orphanet_558"
+    { "key": "wikidata:Q25173", "aspect": "vessel" },
+    { "key": "wikidata:Q171255", "aspect": "vessel" },
+    { "key": "imo:9811000", "aspect": "vessel" },
+    { "key": "wikidata:Q767166", "aspect": "class" },
+    { "key": "wikidata:Q848977", "aspect": "shipyard" },
+    { "key": "wikidata:Q1624735", "aspect": "operator" }
   ],
-  "panels": {
-    "author": {
-      "add": [
-        {
-          "id": "sources-per-year",
-          "title": "Works per year, by source",
-          "query": "queries/custom/author/sources-per-year.rq",
-          "after": "per-year",
-          "wide": true,
-          "render": "vega-lite",
-          "spec": {
-            "mark": { "type": "bar", "tooltip": true },
-            "encoding": {
-              "x": { "field": "year", "type": "ordinal", "title": null },
-              "xOffset": { "field": "source" },
-              "y": { "field": "works", "type": "quantitative", "title": "works" },
-              "color": {
-                "field": "source", "type": "nominal",
-                "scale": {
-                  "domain": ["wikidata", "orcid", "crossref", "datacite", "openalex"],
-                  "range": ["#3a66a8", "#6f8f1f", "#b5562c", "#1f7a8c", "#a8326e"]
-                }
-              }
-            }
-          }
-        }
-      ]
-    },
-    "work": {
-      "add": [
-        { "id": "citations-per-year", "title": "Citations per year", "query": "queries/custom/work/citations-per-year.rq", "render": "bars", "after": "details" }
-      ]
-    }
-  }
+  "panels": {}
 }

@@ -1,0 +1,5 @@
+# Ships listed here, counted by type
+SELECT ?type (SAMPLE(?n) AS ?typeLabel) (COUNT(DISTINCT ?ship) AS ?ships) WHERE {
+  ?ship kr:listedUnder <{{iri}}> ; kr:type ?type
+  OPTIONAL { ?type schema:name ?n }
+} GROUP BY ?type ORDER BY DESC(?ships) LIMIT 100

@@ -1,0 +1,6 @@
+# Other ships of the same class, with when and where they were built
+SELECT ?ship (SAMPLE(?sn) AS ?shipLabel) (SAMPLE(?y) AS ?year) (SAMPLE(?b) AS ?builder) (SAMPLE(?bn) AS ?builderLabel) (SAMPLE(?r) AS ?retired) WHERE {
+  <{{iri}}> kr:vesselClass ?class . ?ship kr:listedUnder ?class FILTER(?ship != <{{iri}}>)
+  OPTIONAL { ?ship schema:name ?sn } OPTIONAL { ?ship kr:year ?y } OPTIONAL { ?ship kr:retiredYear ?r }
+  OPTIONAL { ?ship kr:builder ?b OPTIONAL { ?b schema:name ?bn } }
+} GROUP BY ?ship ORDER BY (COALESCE(?year, "9999")) ?shipLabel
