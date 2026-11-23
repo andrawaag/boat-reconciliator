@@ -5,46 +5,46 @@
       "aspect": "vessel",
       "iri": "http://www.wikidata.org/entity/Q25173",
       "file": "data/vessel/wikidata_Q25173.nq.gz",
-      "quads": 722,
-      "bytes": 10617,
-      "generated": "2026-11-21T10:08:53.499Z",
+      "quads": 728,
+      "bytes": 10735,
+      "generated": "2026-11-23T04:25:40.978Z",
       "endpoint": "https://qlever.dev/api/wikidata",
       "log": [
         {
           "source": "wikidata",
           "what": "vessel neighbourhood",
           "quads": 493,
-          "ms": 539
+          "ms": 1610
         },
         {
           "source": "wikidata",
           "what": "statements (live) and sister ships",
           "quads": 186,
-          "ms": 5418
-        },
-        {
-          "source": "osm",
-          "what": "features tagged with this item",
-          "quads": 12,
-          "ms": 112
+          "ms": 7427
         },
         {
           "source": "commons",
           "what": "category and images",
           "quads": 78,
-          "ms": 253
+          "ms": 356
         },
         {
           "source": "noaa",
           "what": "charted wrecks by name and position",
           "quads": 0,
-          "ms": 356
+          "ms": 476
+        },
+        {
+          "source": "osm",
+          "what": "features tagged with this item",
+          "quads": 18,
+          "ms": 40002
         },
         {
           "source": "reconcile",
           "what": "checks across Wikidata, Commons, OpenStreetMap and NOAA",
           "quads": 20,
-          "ms": 2
+          "ms": 0
         }
       ]
     },
@@ -53,46 +53,46 @@
       "aspect": "vessel",
       "iri": "http://www.wikidata.org/entity/Q171255",
       "file": "data/vessel/wikidata_Q171255.nq.gz",
-      "quads": 428,
-      "bytes": 5575,
-      "generated": "2026-11-21T10:08:55.587Z",
+      "quads": 410,
+      "bytes": 5347,
+      "generated": "2026-11-23T04:25:43.135Z",
       "endpoint": "https://qlever.dev/api/wikidata",
       "log": [
         {
           "source": "wikidata",
           "what": "vessel neighbourhood",
           "quads": 147,
-          "ms": 497
+          "ms": 1056
         },
         {
           "source": "wikidata",
           "what": "statements (live) and sister ships",
           "quads": 175,
-          "ms": 1182
+          "ms": 750
         },
         {
           "source": "osm",
           "what": "features tagged with this item",
-          "quads": 6,
-          "ms": 116
-        },
-        {
-          "source": "commons",
-          "what": "category and images",
-          "quads": 78,
-          "ms": 214
+          "error": "HTTP 502 for overpass-api.de",
+          "ms": 231
         },
         {
           "source": "noaa",
           "what": "charted wrecks by name and position",
           "quads": 0,
-          "ms": 391
+          "ms": 274
+        },
+        {
+          "source": "commons",
+          "what": "category and images",
+          "quads": 78,
+          "ms": 344
         },
         {
           "source": "reconcile",
           "what": "checks across Wikidata, Commons, OpenStreetMap and NOAA",
-          "quads": 27,
-          "ms": 1
+          "quads": 15,
+          "ms": 0
         }
       ]
     },
@@ -102,45 +102,45 @@
       "iri": "http://www.wikidata.org/entity/Q104378621",
       "file": "data/vessel/imo_9811000.nq.gz",
       "quads": 173,
-      "bytes": 2608,
-      "generated": "2026-11-21T10:09:07.149Z",
+      "bytes": 2604,
+      "generated": "2026-11-23T04:26:17.139Z",
       "endpoint": "https://qlever.dev/api/wikidata",
       "log": [
         {
           "source": "wikidata",
           "what": "vessel neighbourhood",
           "quads": 50,
-          "ms": 323
+          "ms": 633
         },
         {
           "source": "wikidata",
           "what": "statements (live) and sister ships",
           "quads": 91,
-          "ms": 10768
-        },
-        {
-          "source": "osm",
-          "what": "features tagged with this item",
-          "quads": 0,
-          "ms": 101
+          "ms": 3983
         },
         {
           "source": "noaa",
           "what": "charted wrecks by name and position",
           "quads": 0,
-          "ms": 237
+          "ms": 179
         },
         {
           "source": "commons",
           "what": "category and images",
           "quads": 21,
-          "ms": 413
+          "ms": 13406
+        },
+        {
+          "source": "osm",
+          "what": "features tagged with this item",
+          "quads": 0,
+          "ms": 29259
         },
         {
           "source": "reconcile",
           "what": "checks across Wikidata, Commons, OpenStreetMap and NOAA",
           "quads": 25,
-          "ms": 0
+          "ms": 1
         }
       ]
     },
@@ -149,28 +149,28 @@
       "aspect": "class",
       "iri": "http://www.wikidata.org/entity/Q767166",
       "file": "data/class/wikidata_Q767166.nq.gz",
-      "quads": 138,
-      "bytes": 2445,
-      "generated": "2026-11-21T09:07:10.802Z",
+      "quads": 97,
+      "bytes": 2043,
+      "generated": "2026-11-23T04:26:25.465Z",
       "endpoint": "https://qlever.dev/api/wikidata",
       "log": [
         {
           "source": "wikidata",
           "what": "class neighbourhood",
           "quads": 8,
-          "ms": 472
+          "ms": 926
         },
         {
           "source": "wikidata",
           "what": "ships of this class",
-          "quads": 121,
-          "ms": 8827
+          "quads": 26,
+          "ms": 7120
         },
         {
           "source": "commons",
           "what": "category and images",
           "quads": 63,
-          "ms": 241
+          "ms": 277
         }
       ]
     },
@@ -180,27 +180,27 @@
       "iri": "http://www.wikidata.org/entity/Q848977",
       "file": "data/shipyard/wikidata_Q848977.nq.gz",
       "quads": 3429,
-      "bytes": 26383,
-      "generated": "2026-11-21T09:07:18.842Z",
+      "bytes": 26214,
+      "generated": "2026-11-23T04:27:06.563Z",
       "endpoint": "https://qlever.dev/api/wikidata",
       "log": [
         {
           "source": "wikidata",
           "what": "shipyard neighbourhood",
           "quads": 106,
-          "ms": 483
+          "ms": 1135
         },
         {
           "source": "wikidata",
           "what": "ships built here",
           "quads": 5546,
-          "ms": 7242
+          "ms": 39575
         },
         {
           "source": "commons",
           "what": "category and images",
           "quads": 78,
-          "ms": 257
+          "ms": 347
         }
       ]
     },
@@ -210,27 +210,27 @@
       "iri": "http://www.wikidata.org/entity/Q1624735",
       "file": "data/operator/wikidata_Q1624735.nq.gz",
       "quads": 558,
-      "bytes": 6766,
-      "generated": "2026-11-21T09:08:01.010Z",
+      "bytes": 6769,
+      "generated": "2026-11-23T04:27:13.645Z",
       "endpoint": "https://qlever.dev/api/wikidata",
       "log": [
         {
           "source": "wikidata",
           "what": "operator neighbourhood",
           "quads": 111,
-          "ms": 321
+          "ms": 695
         },
         {
           "source": "wikidata",
           "what": "ships operated or owned",
           "quads": 799,
-          "ms": 13423
+          "ms": 6055
         },
         {
           "source": "commons",
           "what": "category and images",
           "quads": 72,
-          "ms": 28398
+          "ms": 321
         }
       ]
     }
@@ -240,5 +240,5 @@
     "mmsi:353136000": "imo:9811000",
     "imo:5375992": "wikidata:Q1624735"
   },
-  "generated": "2026-11-21T10:09:07.150Z"
+  "generated": "2026-11-23T04:27:13.645Z"
 }
